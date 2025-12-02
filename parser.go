@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sql-compiler/ast"
 	. "sql-compiler/tokenizer"
 	"strconv"
 )
@@ -65,7 +66,7 @@ func (p *parser) parse_col_or_expr_lit() any {
 	p.pos = walk_back_pos
 	return p.parseCol()
 }
-func (p *parser) parse_simple_expr() where {
+func (p *parser) parse_simple_expr() ast.Where {
 	Value1 := p.parse_col_or_expr_lit()
 	operator := p.tokens[p.pos].Type
 	if operator != LT && operator != GT && operator != EQ {
@@ -73,24 +74,24 @@ func (p *parser) parse_simple_expr() where {
 	}
 	p.pos++
 
-	return where{
+	return ast.Where{
 		Value1:   Value1,
 		Operator: operator,
 		Value2:   p.parse_col_or_expr_lit(),
 	}
 }
-func (p *parser) parseCol() Col {
+func (p *parser) parseCol() ast.Col {
 	col_or_table_name := p.expectIdent()
 	if p.optionallyExpect(DOT) {
-		return table_access{
+		return ast.Table_access{
 			Table_name: col_or_table_name,
 			Col_name:   p.expectIdent(),
 		}
 	}
-	return plain_col_name(col_or_table_name)
+	return ast.Plain_col_name(col_or_table_name)
 }
-func (p *parser) parse_Select() Select {
-	s := Select{}
+func (p *parser) parse_Select() ast.Select {
+	s := ast.Select{}
 	p.expect(SELECT)
 	for !p.optionallyExpect(FROM) {
 		if p.optionallyExpect(LPAREN) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sql-compiler/assert"
+	"sql-compiler/ast"
 	"sql-compiler/display"
 	pubsub "sql-compiler/pub_sub"
 	"sql-compiler/rowType"
@@ -43,17 +44,17 @@ func possibly_turn_from_string_into_bool(v any) any {
 	return v
 }
 
-func (this *Select) get_Runtime_value_relative_location(col Col) Runtime_value_relative_location {
+func get_Runtime_value_relative_location(select_ *ast.Select, col ast.Col) Runtime_value_relative_location {
 	var col_name string
 	switch col := col.(type) {
-	case plain_col_name:
+	case ast.Plain_col_name:
 		col_name = string(col)
-	case table_access:
+	case ast.Table_access:
 		col_name = col.Col_name
-		if col.Table_name != this.Table {
+		if col.Table_name != select_.Table {
 			goto Try_parent
 		}
-	case Select:
+	case ast.Select:
 		panic("not implemented")
 	default:
 		panic("unknown col type")
@@ -62,7 +63,7 @@ func (this *Select) get_Runtime_value_relative_location(col Col) Runtime_value_r
 		panic("col_name is empty")
 	}
 	{
-		table := tables[this.Table]
+		table := tables[select_.Table]
 		index := table.get_col_index(col_name)
 		if index != -1 {
 			return Runtime_value_relative_location{Amount_to_follow: 0, Col_index: index}
@@ -70,25 +71,10 @@ func (this *Select) get_Runtime_value_relative_location(col Col) Runtime_value_r
 	}
 
 Try_parent:
-	if this.Parent_select.IsNone() {
-		panic("col " + col_name + " not found in select " + this.Table)
+	if select_.Parent_select.IsNone() {
+		panic("col " + col_name + " not found in select " + select_.Table)
 	}
-	return this.Parent_select.Unwrap().get_Runtime_value_relative_location(col).Add_one()
-}
-
-func (this *Select) recursively_link_children() {
-	print("sup")
-
-	for i := range this.Selected_values {
-		switch col := this.Selected_values[i].(type) {
-		case Select:
-			col.Parent_select = option.Some(this)
-			col.recursively_link_children()
-			this.Selected_values[i] = col
-		case *Select:
-			panic("unexpected pointer")
-		}
-	}
+	return get_Runtime_value_relative_location(select_.Parent_select.Unwrap(), col).Add_one()
 }
 
 type Expression any
@@ -109,35 +95,35 @@ type Select_byte_code struct {
 	Selected_values_byte_code []Expression
 }
 
-func (this *Select) get_Runtime_value_relative_location_if_Col(expr any) Expression {
-	if col, ok := expr.(Col); ok {
-		return this.get_Runtime_value_relative_location(col)
+func get_Runtime_value_relative_location_if_Col(this *ast.Select, expr any) Expression {
+	if col, ok := expr.(ast.Col); ok {
+		return get_Runtime_value_relative_location(this, col)
 	}
 	return expr
 }
-func (this *Select) make_select_byte_code() Select_byte_code {
-	assert.Assert(this.Table != "")
+func make_select_byte_code(select_ *ast.Select) Select_byte_code {
+	assert.Assert(select_.Table != "")
 	s := Select_byte_code{
-		Table_name: this.Table,
+		Table_name: select_.Table,
 	}
 
-	for _, where := range this.Wheres {
+	for _, where := range select_.Wheres {
 		s.Wheres_byte_code = append(s.Wheres_byte_code, Where_Byte_Code{
-			Value_1:      this.get_Runtime_value_relative_location_if_Col(where.Value1),
+			Value_1:      get_Runtime_value_relative_location_if_Col(select_, where.Value1),
 			Compare_type: string(where.Operator),
-			Value_2:      this.get_Runtime_value_relative_location_if_Col(where.Value2),
+			Value_2:      get_Runtime_value_relative_location_if_Col(select_, where.Value2),
 		})
 	}
 
-	for _, col := range this.Selected_values {
+	for _, col := range select_.Selected_values {
 		switch col := col.(type) {
-		case Select:
+		case ast.Select:
 			// panic("not supported nested yet, coming soon...")
-			s.Selected_values_byte_code = append(s.Selected_values_byte_code, col.make_select_byte_code())
-		case plain_col_name:
-			s.Selected_values_byte_code = append(s.Selected_values_byte_code, this.get_Runtime_value_relative_location_if_Col(col))
-		case table_access:
-			s.Selected_values_byte_code = append(s.Selected_values_byte_code, this.get_Runtime_value_relative_location_if_Col(col))
+			s.Selected_values_byte_code = append(s.Selected_values_byte_code, make_select_byte_code(&col))
+		case ast.Plain_col_name:
+			s.Selected_values_byte_code = append(s.Selected_values_byte_code, get_Runtime_value_relative_location_if_Col(select_, col))
+		case ast.Table_access:
+			s.Selected_values_byte_code = append(s.Selected_values_byte_code, get_Runtime_value_relative_location_if_Col(select_, col))
 		}
 	}
 	return s
@@ -280,9 +266,9 @@ func main() {
 		fmt.Printf("%-8s %q @%d\n", t.Type, t.Literal, t.Pos)
 	}
 	select_ := parser.parse_Select()
-	select_.recursively_link_children()
+	select_.Recursively_link_children()
 	display.DisplayStruct(select_)
-	select_byte_code := select_.make_select_byte_code()
+	select_byte_code := make_select_byte_code(&select_)
 	display.DisplayStruct(select_byte_code)
 
 	select_byte_code_to_observable(select_byte_code, option.None[*Row_context]()).To_display()

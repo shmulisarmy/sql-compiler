@@ -2,6 +2,7 @@ package ast
 
 import (
 	. "sql-compiler/tokenizer"
+	"sql-compiler/unwrap"
 	. "sql-compiler/unwrap"
 )
 
@@ -33,4 +34,19 @@ type Select struct {
 	Selected_values []any
 	// compile time (post parsing stage) inserted
 	Parent_select Option[*Select]
+}
+
+func (this *Select) Recursively_link_children() {
+	print("sup")
+
+	for i := range this.Selected_values {
+		switch col := this.Selected_values[i].(type) {
+		case Select:
+			col.Parent_select = unwrap.Some(this)
+			col.Recursively_link_children()
+			this.Selected_values[i] = col
+		case *Select:
+			panic("unexpected pointer")
+		}
+	}
 }
