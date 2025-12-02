@@ -21,7 +21,7 @@ func color(s, c string) string {
 	return c + s + reset
 }
 
-func Display(v interface{}) {
+func DisplayStruct(v interface{}) {
 	out := displayValue(reflect.ValueOf(v), 0)
 	fmt.Println(colors.Blue(out))
 }

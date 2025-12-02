@@ -74,14 +74,14 @@ Try_parent:
 	return this.Parent_select.Unwrap().get_Runtime_value_relative_location(col).add_one()
 }
 
-func (this *Select) parent_children() {
+func (this *Select) recursively_link_children() {
 	print("sup")
 
 	for i := range this.Selected_values {
 		switch col := this.Selected_values[i].(type) {
 		case Select:
 			col.Parent_select = option.Some(this)
-			col.parent_children()
+			col.recursively_link_children()
 			this.Selected_values[i] = col
 		case *Select:
 			panic("unexpected pointer")
@@ -292,26 +292,23 @@ func select_byte_code_to_observable(select_byte_code Select_byte_code, parent_co
 }
 
 func main() {
-	// src := `SELECT person.name, (SELECT person.state, (SELECT person.name FROM person WHERE todo.title > 18) FROM todo WHERE todo.done == true) FROM person WHERE person.age > 18`
 	src := `SELECT person.name, person.email, id, (
 		SELECT todo.title, person.id FROM todo WHERE todo.person_id == person.id  AND person.age > 22
 		) FROM person WHERE person.age > 3 `
-	l := NewLexer(src)
 
+	l := NewLexer(src)
 	parser := parser{tokens: l.Tokenize()}
 	for _, t := range parser.tokens {
 		fmt.Printf("%-8s %q @%d\n", t.Type, t.Literal, t.Pos)
 	}
 	select_ := parser.parse_Select()
-	select_.parent_children()
-	display.Display(select_)
+	select_.recursively_link_children()
+	display.DisplayStruct(select_)
 	select_byte_code := select_.make_select_byte_code()
-	display.Display(select_byte_code)
+	display.DisplayStruct(select_byte_code)
 
-	////
 	select_byte_code_to_observable(select_byte_code, option.None[*Row_context]()).to_display()
 
-	////
 	tables["todo"].r_Table.add(RowType{"clean", "make sure its clean", true, 1})
 	tables["todo"].r_Table.add(RowType{"eat food", "make sure its clean", false, 1})
 	tables["todo"].r_Table.add(RowType{"play music", "make sure its clean", false, 1})
@@ -319,7 +316,6 @@ func main() {
 	tables["person"].r_Table.add(RowType{"shmulik", "email@gmail.com", 25, "state", 1})
 	tables["person"].r_Table.add(RowType{"baby chana", "email@gmail.com", 20, "state", 2})
 
-	// Exit with success code
 	os.Exit(0)
 
 }
