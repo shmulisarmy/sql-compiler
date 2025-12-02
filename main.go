@@ -5,6 +5,7 @@ import (
 	"os"
 	"sql-compiler/assert"
 	"sql-compiler/ast"
+	"sql-compiler/byte_code"
 	"sql-compiler/display"
 	pubsub "sql-compiler/pub_sub"
 	"sql-compiler/rowType"
@@ -77,38 +78,20 @@ Try_parent:
 	return get_Runtime_value_relative_location(select_.Parent_select.Unwrap(), col).Add_one()
 }
 
-type Expression any
-
-// interface {
-// 	Expression__()
-// }
-
-type Where_Byte_Code struct {
-	Value_1      Expression
-	Compare_type string
-	Value_2      Expression
-}
-
-type Select_byte_code struct {
-	Table_name                string
-	Wheres_byte_code          []Where_Byte_Code
-	Selected_values_byte_code []Expression
-}
-
-func get_Runtime_value_relative_location_if_Col(this *ast.Select, expr any) Expression {
+func get_Runtime_value_relative_location_if_Col(this *ast.Select, expr any) byte_code.Expression {
 	if col, ok := expr.(ast.Col); ok {
 		return get_Runtime_value_relative_location(this, col)
 	}
 	return expr
 }
-func make_select_byte_code(select_ *ast.Select) Select_byte_code {
+func make_select_byte_code(select_ *ast.Select) byte_code.Select {
 	assert.Assert(select_.Table != "")
-	s := Select_byte_code{
+	s := byte_code.Select{
 		Table_name: select_.Table,
 	}
 
 	for _, where := range select_.Wheres {
-		s.Wheres_byte_code = append(s.Wheres_byte_code, Where_Byte_Code{
+		s.Wheres_byte_code = append(s.Wheres_byte_code, byte_code.Where{
 			Value_1:      get_Runtime_value_relative_location_if_Col(select_, where.Value1),
 			Compare_type: string(where.Operator),
 			Value_2:      get_Runtime_value_relative_location_if_Col(select_, where.Value2),
@@ -129,13 +112,13 @@ func make_select_byte_code(select_ *ast.Select) Select_byte_code {
 	return s
 }
 
-var tables map[string]*Table = map[string]*Table{
-	"person": &Table{
+var tables = map[string]*Table{
+	"person": {
 		Name:    "person",
 		Columns: []string{"name", "email", "age", "state", "id"},
 		r_Table: pubsub.New_R_Table(),
 	},
-	"todo": &Table{
+	"todo": {
 		Name:    "todo",
 		Columns: []string{"title", "description", "done", "person_id"},
 		r_Table: pubsub.New_R_Table(),
@@ -221,7 +204,7 @@ func (this *Row_context) track_value_if_is_relative_location(value any) any {
 	return value
 }
 
-func filter(row_context Row_context, wheres []Where_Byte_Code) bool {
+func filter(row_context Row_context, wheres []byte_code.Where) bool {
 	for _, where := range wheres {
 		if !compare_methods[where.Compare_type](row_context.track_value_if_is_relative_location(where.Value_1), row_context.track_value_if_is_relative_location(where.Value_2)) {
 			return false
@@ -230,13 +213,13 @@ func filter(row_context Row_context, wheres []Where_Byte_Code) bool {
 	return true
 }
 
-func map_over(row_context Row_context, selected_values_byte_code []Expression) rowType.RowType {
+func map_over(row_context Row_context, selected_values_byte_code []byte_code.Expression) rowType.RowType {
 	row := rowType.RowType{}
 	for _, select_value_byte_code := range selected_values_byte_code { ///select_value_byte_code could just be a plain value
 		switch select_value_byte_code := select_value_byte_code.(type) {
 		case Runtime_value_relative_location:
 			row = append(row, row_context.get_value(select_value_byte_code))
-		case Select_byte_code:
+		case byte_code.Select:
 			childs_row_context := Row_context{row: row_context.row, parent_context: option.Some(&row_context)}
 			row = append(row, select_byte_code_to_observable(select_value_byte_code, option.Some(&childs_row_context)))
 		default:
@@ -246,7 +229,7 @@ func map_over(row_context Row_context, selected_values_byte_code []Expression) r
 	return row
 }
 
-func select_byte_code_to_observable(select_byte_code Select_byte_code, parent_context option.Option[*Row_context]) pubsub.ObservableI {
+func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_context option.Option[*Row_context]) pubsub.ObservableI {
 	table := tables[select_byte_code.Table_name]
 	return table.r_Table.Filter_on(func(row rowType.RowType) bool {
 		return filter(Row_context{row: row, parent_context: parent_context}, select_byte_code.Wheres_byte_code)
