@@ -10,6 +10,15 @@ func (this *Filter) set_subscribed_to(observable ObservableI) {
 	this.subscribed_to = observable
 }
 
+func (this *Filter) pull(yield func(RowType) bool) {
+	this.subscribed_to.pull(func(row RowType) bool {
+		if this.predicate(row) {
+			yield(row)
+		}
+		return true
+	})
+}
+
 func (this *Filter) on_add(row RowType) {
 	if this.predicate(row) {
 		this.publish_add(row)

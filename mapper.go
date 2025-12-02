@@ -10,6 +10,12 @@ func (this *Mapper) set_subscribed_to(observable ObservableI) {
 	this.subscribed_to = observable
 }
 
+func (this *Mapper) pull(yield func(RowType) bool) {
+	this.subscribed_to.pull(func(row RowType) bool {
+		yield(this.transformer(row))
+		return true
+	})
+}
 func (this *Mapper) on_add(row RowType) {
 	this.publish_add(this.transformer(row))
 }

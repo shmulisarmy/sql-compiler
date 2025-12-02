@@ -35,9 +35,15 @@ func link(observable ObservableI, subscriber Subscriber) {
 type ObservableI interface {
 	add_sub(subscriber Subscriber) //will get from Observable
 	///
+	pull(yield func(RowType) bool)
 	publish_add(row RowType)
 	publish_remove(row RowType)
 	publish_publish(old_row RowType, new_row RowType)
+	interface {
+		filter_on(predicate func(RowType) bool) ObservableI
+		map_on(transformer func(RowType) RowType) ObservableI
+		to_display() *Printer
+	}
 }
 type Subscriber interface {
 	set_subscribed_to(observable ObservableI)

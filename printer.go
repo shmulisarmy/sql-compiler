@@ -22,3 +22,10 @@ func (this *Printer) on_remove(row RowType) {
 func (this *Printer) on_update(old_row RowType, new_row RowType) {
 	fmt.Println("updated row from ", old_row, "to", new_row)
 }
+
+func (this *Printer) run() {
+	this.subscribed_to.pull(func(row RowType) bool {
+		fmt.Println("row ", row)
+		return true
+	})
+}

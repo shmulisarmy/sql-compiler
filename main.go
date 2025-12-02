@@ -118,13 +118,14 @@ var tables map[string]Table = map[string]Table{
 
 func main() {
 	c := R_Table{}
-	f := Filter{predicate: func(row RowType) bool {
+	p := c.filter_on(func(row RowType) bool {
 		return row[0] == "shmulik"
-	}}
-	link(&c, &f)
-	link(&f, &Printer{})
+	}).map_on(func(rt RowType) RowType {
+		return append(rt, "shmulik")
+	}).to_display()
 	c.add(RowType{"shmulik", "email@gmail.com", "25", "state"})
 	c.add(RowType{"shmulik", "email@gmail.com", "25", "state"})
+	p.run()
 }
 func main1() {
 	src := `SELECT person.name, (SELECT person.state, (SELECT person.name FROM person WHERE todo.title > 18) FROM todo WHERE todo.done == true) FROM person WHERE person.age > 18`
