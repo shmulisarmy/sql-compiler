@@ -83,26 +83,46 @@ func (this *Select) parent_children() {
 	}
 }
 
-func (this *Select) c() {
+type Expression any
 
-	wheres_byte_code := []Runtime_value_relative_location{}
+// interface {
+// 	Expression__()
+// }
+
+type Where_Byte_Code struct {
+	Value_1      Expression
+	Compare_type string
+	Value_2      Expression
+}
+
+type Select_byte_code struct {
+	Wheres_byte_code          []Where_Byte_Code
+	Selected_values_byte_code []Expression
+}
+
+func (this *Select) make_select_byte_code() Select_byte_code {
+	s := Select_byte_code{}
+
 	for _, where := range this.Wheres {
-		wheres_byte_code = append(wheres_byte_code, this.get_Runtime_value_relative_location(where.Col))
+		s.Wheres_byte_code = append(s.Wheres_byte_code, Where_Byte_Code{
+			Value_1:      this.get_Runtime_value_relative_location(where.Col),
+			Compare_type: string(where.Operator),
+			Value_2:      where.Value,
+		})
 	}
-	selected_values_byte_code := []Runtime_value_relative_location{}
 
 	for _, col := range this.Selected_values {
 		switch col := col.(type) {
 		case Select:
-			col.c()
+			// panic("not supported nested yet, coming soon...")
+			s.Selected_values_byte_code = append(s.Selected_values_byte_code, col.make_select_byte_code())
 		case plain_col_name:
-			selected_values_byte_code = append(selected_values_byte_code, this.get_Runtime_value_relative_location(col))
+			s.Selected_values_byte_code = append(s.Selected_values_byte_code, this.get_Runtime_value_relative_location(col))
 		case table_access:
-			selected_values_byte_code = append(selected_values_byte_code, this.get_Runtime_value_relative_location(col))
+			s.Selected_values_byte_code = append(s.Selected_values_byte_code, this.get_Runtime_value_relative_location(col))
 		}
 	}
-	display.Display(wheres_byte_code)
-	display.Display(selected_values_byte_code)
+	return s
 }
 
 var tables map[string]Table = map[string]Table{
@@ -116,7 +136,7 @@ var tables map[string]Table = map[string]Table{
 	},
 }
 
-func main() {
+func main1() {
 	c := R_Table{}
 	p := c.filter_on(func(row RowType) bool {
 		return row[0] == "shmulik"
@@ -127,7 +147,7 @@ func main() {
 	c.add(RowType{"shmulik", "email@gmail.com", "25", "state"})
 	p.run()
 }
-func main1() {
+func main() {
 	src := `SELECT person.name, (SELECT person.state, (SELECT person.name FROM person WHERE todo.title > 18) FROM todo WHERE todo.done == true) FROM person WHERE person.age > 18`
 	l := NewLexer(src)
 
@@ -138,7 +158,8 @@ func main1() {
 	select_ := parser.parse_Select()
 	select_.parent_children()
 	display.Display(select_)
-	select_.c()
+	select_byte_code := select_.make_select_byte_code()
+	display.Display(select_byte_code)
 
 	// Exit with success code
 	os.Exit(0)
