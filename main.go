@@ -9,6 +9,7 @@ import (
 	"sql-compiler/display"
 	pubsub "sql-compiler/pub_sub"
 	"sql-compiler/rowType"
+	"sql-compiler/state_full_byte_code"
 	. "sql-compiler/tokenizer"
 	option "sql-compiler/unwrap"
 )
@@ -173,44 +174,23 @@ var compare_methods = map[string]func(value1 any, value2 any) bool{
 	},
 }
 
-type Row_context struct {
-	row            rowType.RowType
-	parent_context option.Option[*Row_context]
-}
-
-func (this *Row_context) get_value(relative_location byte_code.Runtime_value_relative_location) any {
-	current := this
-	for i := 0; i < relative_location.Amount_to_follow; i++ {
-		current = current.parent_context.Expect(fmt.Sprintf("the fact that there is a problem with going up the stack on a relative_location.Amount_to_follow of %d is either a problem with linking in the parent context or a miscalculation on how far to go (a calculation made in func get_Runtime_value_relative_location as of 2025-12-02 in branch lsp)", relative_location.Amount_to_follow))
-	}
-
-	return current.row[relative_location.Col_index]
-}
-
-func (this *Row_context) track_value_if_is_relative_location(value any) any {
-	if relative_location, ok := value.(byte_code.Runtime_value_relative_location); ok {
-		return this.get_value(relative_location)
-	}
-	return value
-}
-
-func filter(row_context Row_context, wheres []byte_code.Where) bool {
+func filter(row_context state_full_byte_code.Row_context, wheres []byte_code.Where) bool {
 	for _, where := range wheres {
-		if !compare_methods[where.Compare_type](row_context.track_value_if_is_relative_location(where.Value_1), row_context.track_value_if_is_relative_location(where.Value_2)) {
+		if !compare_methods[where.Compare_type](row_context.Track_value_if_is_relative_location(where.Value_1), row_context.Track_value_if_is_relative_location(where.Value_2)) {
 			return false
 		}
 	}
 	return true
 }
 
-func map_over(row_context Row_context, selected_values_byte_code []byte_code.Expression) rowType.RowType {
+func map_over(row_context state_full_byte_code.Row_context, selected_values_byte_code []byte_code.Expression) rowType.RowType {
 	row := rowType.RowType{}
 	for _, select_value_byte_code := range selected_values_byte_code { ///select_value_byte_code could just be a plain value
 		switch select_value_byte_code := select_value_byte_code.(type) {
 		case byte_code.Runtime_value_relative_location:
-			row = append(row, row_context.get_value(select_value_byte_code))
+			row = append(row, row_context.Get_value(select_value_byte_code))
 		case byte_code.Select:
-			childs_row_context := Row_context{row: row_context.row, parent_context: option.Some(&row_context)}
+			childs_row_context := state_full_byte_code.Row_context{Row: row_context.Row, Parent_context: option.Some(&row_context)}
 			row = append(row, select_byte_code_to_observable(select_value_byte_code, option.Some(&childs_row_context)))
 		default:
 			row = append(row, select_value_byte_code)
@@ -219,12 +199,12 @@ func map_over(row_context Row_context, selected_values_byte_code []byte_code.Exp
 	return row
 }
 
-func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_context option.Option[*Row_context]) pubsub.ObservableI {
+func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_context option.Option[*state_full_byte_code.Row_context]) pubsub.ObservableI {
 	table := tables[select_byte_code.Table_name]
 	return table.r_Table.Filter_on(func(row rowType.RowType) bool {
-		return filter(Row_context{row: row, parent_context: parent_context}, select_byte_code.Wheres_byte_code)
+		return filter(state_full_byte_code.Row_context{Row: row, Parent_context: parent_context}, select_byte_code.Wheres_byte_code)
 	}).Map_on(func(row rowType.RowType) rowType.RowType {
-		return map_over(Row_context{row: row, parent_context: parent_context}, select_byte_code.Selected_values_byte_code)
+		return map_over(state_full_byte_code.Row_context{Row: row, Parent_context: parent_context}, select_byte_code.Selected_values_byte_code)
 	})
 }
 
@@ -244,7 +224,7 @@ func main() {
 	select_byte_code := make_select_byte_code(&select_)
 	display.DisplayStruct(select_byte_code)
 
-	select_byte_code_to_observable(select_byte_code, option.None[*Row_context]()).To_display()
+	select_byte_code_to_observable(select_byte_code, option.None[*state_full_byte_code.Row_context]()).To_display()
 
 	tables["todo"].r_Table.Add(rowType.RowType{"clean", "make sure its clean", true, 1})
 	tables["todo"].r_Table.Add(rowType.RowType{"eat food", "make sure its clean", false, 1})
