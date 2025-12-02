@@ -22,15 +22,15 @@ func (table_access) __Col() {}
 func (Select) __Col()       {}
 
 type where struct {
-	Col      Col
+	Value1   any
 	Operator TokenType
-	Value    any
+	Value2   any
 }
 
 type Select struct {
 	Table           string
 	Wheres          []where
-	Selected_values []Col
+	Selected_values []any
 	// compile time inserted
 	Parent_select Option[*Select]
 }

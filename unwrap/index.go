@@ -28,6 +28,12 @@ func (o Option[T]) IsNone() bool {
 }
 
 // Unwrap returns the value or panics if None.
+func (o Option[T]) Expect(msg string) T {
+	if !o.has_value {
+		panic(msg)
+	}
+	return o.value
+}
 func (o Option[T]) Unwrap() T {
 	if !o.has_value {
 		panic("called Unwrap on None")

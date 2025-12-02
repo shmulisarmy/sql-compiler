@@ -4,7 +4,6 @@ import (
 	"fmt"
 	. "sql-compiler/tokenizer"
 	"strconv"
-	"unicode"
 )
 
 type parser struct {
@@ -48,26 +47,36 @@ func (p *parser) optionallyExpect(tt TokenType) bool {
 func (p *parser) inrange() bool {
 	return p.pos < len(p.tokens)
 }
+func (p *parser) parse_col_or_expr_lit() any {
+	walk_back_pos := p.pos
+	token := p.tokens[p.pos]
+	p.pos += 1
+	if token.Type == STRING {
+
+		return token.Literal
+	}
+	if token.Type == INT {
+		n, err := strconv.Atoi(token.Literal)
+		if err != nil {
+			panic(err)
+		}
+		return n
+	}
+	p.pos = walk_back_pos
+	return p.parseCol()
+}
 func (p *parser) parse_simple_expr() where {
-	col := p.parseCol()
+	Value1 := p.parse_col_or_expr_lit()
 	operator := p.tokens[p.pos].Type
 	if operator != LT && operator != GT && operator != EQ {
 		panic("expected ASSIGN or LT or GT or LE or GE instead of " + string(operator))
 	}
 	p.pos++
-	var value any = p.tokens[p.pos].Literal
-	p.pos++
-	if unicode.IsDigit(rune(value.(string)[0])) {
-		n, err := strconv.Atoi(value.(string))
-		if err != nil {
-			panic(err)
-		}
-		value = n
-	}
+
 	return where{
-		Col:      col,
+		Value1:   Value1,
 		Operator: operator,
-		Value:    value,
+		Value2:   p.parse_col_or_expr_lit(),
 	}
 }
 func (p *parser) parseCol() Col {
@@ -88,7 +97,7 @@ func (p *parser) parse_Select() Select {
 			s.Selected_values = append(s.Selected_values, p.parse_Select())
 			p.expect(RPAREN)
 		} else {
-			s.Selected_values = append(s.Selected_values, p.parseCol())
+			s.Selected_values = append(s.Selected_values, p.parse_col_or_expr_lit())
 		}
 		if !p.optionallyExpect(COMMA) {
 			p.expect(FROM)

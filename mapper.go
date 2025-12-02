@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Mapper struct {
 	Observable
 	transformer   func(RowType) RowType
@@ -26,4 +28,12 @@ func (this *Mapper) on_remove(row RowType) {
 
 func (this *Mapper) on_update(old_row RowType, new_row RowType) {
 	this.publish_publish(this.transformer(old_row), this.transformer(new_row))
+}
+
+func (this *Mapper) String() string {
+	res := "["
+	for row := range this.pull {
+		res += fmt.Sprintf("%v\n", row)
+	}
+	return res + "]"
 }
