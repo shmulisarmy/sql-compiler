@@ -5,6 +5,8 @@ import (
 	"os"
 	"sql-compiler/assert"
 	"sql-compiler/display"
+	pubsub "sql-compiler/pub_sub"
+	"sql-compiler/rowType"
 	. "sql-compiler/tokenizer"
 	option "sql-compiler/unwrap"
 )
@@ -14,7 +16,7 @@ import (
 type Table struct {
 	Name    string
 	Columns []string
-	r_Table R_Table
+	r_Table pubsub.R_Table
 }
 
 func (this Table) get_col_index(col_name string) int {
@@ -32,7 +34,7 @@ type Runtime_value_relative_location struct {
 	Col_index        int
 }
 
-func (this Runtime_value_relative_location) add_one() Runtime_value_relative_location {
+func (this Runtime_value_relative_location) Add_one() Runtime_value_relative_location {
 	this.Amount_to_follow++
 	return this
 }
@@ -71,7 +73,7 @@ Try_parent:
 	if this.Parent_select.IsNone() {
 		panic("col " + col_name + " not found in select " + this.Table)
 	}
-	return this.Parent_select.Unwrap().get_Runtime_value_relative_location(col).add_one()
+	return this.Parent_select.Unwrap().get_Runtime_value_relative_location(col).Add_one()
 }
 
 func (this *Select) recursively_link_children() {
@@ -145,37 +147,13 @@ var tables map[string]*Table = map[string]*Table{
 	"person": &Table{
 		Name:    "person",
 		Columns: []string{"name", "email", "age", "state", "id"},
-		r_Table: R_Table{
-			Observable: Observable{
-				Subscribers: []Subscriber{},
-			},
-			rows:       []RowType{},
-			is_deleted: []bool{},
-		},
+		r_Table: pubsub.New_R_Table(),
 	},
 	"todo": &Table{
 		Name:    "todo",
 		Columns: []string{"title", "description", "done", "person_id"},
-		r_Table: R_Table{
-			Observable: Observable{
-				Subscribers: []Subscriber{},
-			},
-			rows:       []RowType{},
-			is_deleted: []bool{},
-		},
+		r_Table: pubsub.New_R_Table(),
 	},
-}
-
-func main1() {
-	c := R_Table{}
-	p := c.filter_on(func(row RowType) bool {
-		return row[0] == "shmulik"
-	}).map_on(func(rt RowType) RowType {
-		return append(rt, "shmulik")
-	}).to_display()
-	c.add(RowType{"shmulik", "email@gmail.com", "25", "state"})
-	c.add(RowType{"shmulik", "email@gmail.com", "25", "state"})
-	p.run()
 }
 
 var compare_methods = map[string]func(value1 any, value2 any) bool{
@@ -237,7 +215,7 @@ var compare_methods = map[string]func(value1 any, value2 any) bool{
 }
 
 type Row_context struct {
-	row            RowType
+	row            rowType.RowType
 	parent_context option.Option[*Row_context]
 }
 
@@ -266,8 +244,8 @@ func filter(row_context Row_context, wheres []Where_Byte_Code) bool {
 	return true
 }
 
-func map_over(row_context Row_context, selected_values_byte_code []Expression) RowType {
-	row := RowType{}
+func map_over(row_context Row_context, selected_values_byte_code []Expression) rowType.RowType {
+	row := rowType.RowType{}
 	for _, select_value_byte_code := range selected_values_byte_code { ///select_value_byte_code could just be a plain value
 		switch select_value_byte_code := select_value_byte_code.(type) {
 		case Runtime_value_relative_location:
@@ -282,11 +260,11 @@ func map_over(row_context Row_context, selected_values_byte_code []Expression) R
 	return row
 }
 
-func select_byte_code_to_observable(select_byte_code Select_byte_code, parent_context option.Option[*Row_context]) ObservableI {
+func select_byte_code_to_observable(select_byte_code Select_byte_code, parent_context option.Option[*Row_context]) pubsub.ObservableI {
 	table := tables[select_byte_code.Table_name]
-	return table.r_Table.filter_on(func(row RowType) bool {
+	return table.r_Table.Filter_on(func(row rowType.RowType) bool {
 		return filter(Row_context{row: row, parent_context: parent_context}, select_byte_code.Wheres_byte_code)
-	}).map_on(func(row RowType) RowType {
+	}).Map_on(func(row rowType.RowType) rowType.RowType {
 		return map_over(Row_context{row: row, parent_context: parent_context}, select_byte_code.Selected_values_byte_code)
 	})
 }
@@ -307,14 +285,14 @@ func main() {
 	select_byte_code := select_.make_select_byte_code()
 	display.DisplayStruct(select_byte_code)
 
-	select_byte_code_to_observable(select_byte_code, option.None[*Row_context]()).to_display()
+	select_byte_code_to_observable(select_byte_code, option.None[*Row_context]()).To_display()
 
-	tables["todo"].r_Table.add(RowType{"clean", "make sure its clean", true, 1})
-	tables["todo"].r_Table.add(RowType{"eat food", "make sure its clean", false, 1})
-	tables["todo"].r_Table.add(RowType{"play music", "make sure its clean", false, 1})
-	tables["todo"].r_Table.add(RowType{"do art", "make sure its clean", false, 2})
-	tables["person"].r_Table.add(RowType{"shmulik", "email@gmail.com", 25, "state", 1})
-	tables["person"].r_Table.add(RowType{"baby chana", "email@gmail.com", 20, "state", 2})
+	tables["todo"].r_Table.Add(rowType.RowType{"clean", "make sure its clean", true, 1})
+	tables["todo"].r_Table.Add(rowType.RowType{"eat food", "make sure its clean", false, 1})
+	tables["todo"].r_Table.Add(rowType.RowType{"play music", "make sure its clean", false, 1})
+	tables["todo"].r_Table.Add(rowType.RowType{"do art", "make sure its clean", false, 2})
+	tables["person"].r_Table.Add(rowType.RowType{"shmulik", "email@gmail.com", 25, "state", 1})
+	tables["person"].r_Table.Add(rowType.RowType{"baby chana", "email@gmail.com", 20, "state", 2})
 
 	os.Exit(0)
 
