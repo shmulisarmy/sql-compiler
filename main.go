@@ -31,21 +31,11 @@ func (this Table) get_col_index(col_name string) int {
 	return -1
 }
 
-type Runtime_value_relative_location struct {
-	Amount_to_follow int
-	Col_index        int
-}
-
-func (this Runtime_value_relative_location) Add_one() Runtime_value_relative_location {
-	this.Amount_to_follow++
-	return this
-}
-
 func possibly_turn_from_string_into_bool(v any) any {
 	return v
 }
 
-func get_Runtime_value_relative_location(select_ *ast.Select, col ast.Col) Runtime_value_relative_location {
+func get_Runtime_value_relative_location(select_ *ast.Select, col ast.Col) byte_code.Runtime_value_relative_location {
 	var col_name string
 	switch col := col.(type) {
 	case ast.Plain_col_name:
@@ -67,7 +57,7 @@ func get_Runtime_value_relative_location(select_ *ast.Select, col ast.Col) Runti
 		table := tables[select_.Table]
 		index := table.get_col_index(col_name)
 		if index != -1 {
-			return Runtime_value_relative_location{Amount_to_follow: 0, Col_index: index}
+			return byte_code.Runtime_value_relative_location{Amount_to_follow: 0, Col_index: index}
 		}
 	}
 
@@ -188,7 +178,7 @@ type Row_context struct {
 	parent_context option.Option[*Row_context]
 }
 
-func (this *Row_context) get_value(relative_location Runtime_value_relative_location) any {
+func (this *Row_context) get_value(relative_location byte_code.Runtime_value_relative_location) any {
 	current := this
 	for i := 0; i < relative_location.Amount_to_follow; i++ {
 		current = current.parent_context.Expect(fmt.Sprintf("the fact that there is a problem with going up the stack on a relative_location.Amount_to_follow of %d is either a problem with linking in the parent context or a miscalculation on how far to go (a calculation made in func get_Runtime_value_relative_location as of 2025-12-02 in branch lsp)", relative_location.Amount_to_follow))
@@ -198,7 +188,7 @@ func (this *Row_context) get_value(relative_location Runtime_value_relative_loca
 }
 
 func (this *Row_context) track_value_if_is_relative_location(value any) any {
-	if relative_location, ok := value.(Runtime_value_relative_location); ok {
+	if relative_location, ok := value.(byte_code.Runtime_value_relative_location); ok {
 		return this.get_value(relative_location)
 	}
 	return value
@@ -217,7 +207,7 @@ func map_over(row_context Row_context, selected_values_byte_code []byte_code.Exp
 	row := rowType.RowType{}
 	for _, select_value_byte_code := range selected_values_byte_code { ///select_value_byte_code could just be a plain value
 		switch select_value_byte_code := select_value_byte_code.(type) {
-		case Runtime_value_relative_location:
+		case byte_code.Runtime_value_relative_location:
 			row = append(row, row_context.get_value(select_value_byte_code))
 		case byte_code.Select:
 			childs_row_context := Row_context{row: row_context.row, parent_context: option.Some(&row_context)}
