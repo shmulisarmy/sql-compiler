@@ -14,6 +14,8 @@ const (
 	FROM   TokenType = "FROM"
 	WHERE  TokenType = "WHERE"
 	AND    TokenType = "AND"
+	TRUE   TokenType = "TRUE"
+	FALSE  TokenType = "FALSE"
 
 	// Special
 	ILLEGAL TokenType = "ILLEGAL"
@@ -105,6 +107,8 @@ var keywords = map[string]TokenType{
 	"FROM":   FROM,
 	"WHERE":  WHERE,
 	"AND":    AND,
+	"true":   TRUE,
+	"false":  FALSE,
 }
 
 func lookupIdent(ident string) TokenType {

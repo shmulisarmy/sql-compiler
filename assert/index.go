@@ -1,19 +1,30 @@
 package assert
 
-func Assert(condition bool) {
+func Assert(condition bool, msg ...string) {
+	if len(msg) == 0 {
+		msg = []string{"assertion failed"}
+	}
+
 	if !condition {
-		panic("assertion failed")
+		panic(msg[0])
 	}
 }
 
-func AssertNot(condition bool) {
+func AssertNot(condition bool, msg ...string) {
+	if len(msg) == 0 {
+		msg = []string{"assertion failed"}
+	}
+
 	if condition {
-		panic("assertion failed")
+		panic(msg[0])
 	}
 }
 
-func AssertEq(a any, b any) {
+func AssertEq(a any, b any, msg ...string) {
+	if len(msg) == 0 {
+		msg = []string{"assertion failed"}
+	}
 	if a != b {
-		panic("assertion failed")
+		panic(msg[0])
 	}
 }

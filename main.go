@@ -16,16 +16,54 @@ import (
 
 /////
 
+type DataType int
+
+const (
+	String DataType = iota
+	Int
+	Bool
+)
+
+type ColInfo struct {
+	Name string
+	Type DataType
+}
+
 type Table struct {
 	Name    string
-	Columns []string
+	Columns []ColInfo
 	r_Table pubsub.R_Table
+}
+
+func (this *Table) insert(row rowType.RowType) {
+	assert.AssertEq(len(row), len(this.Columns), fmt.Sprintf("rows in table %s must have %d columns and you passed a row that has %d columns", this.Name, len(this.Columns), len(row)))
+	validate_col_types(this, &row)
+	this.r_Table.Add(row)
+}
+
+func validate_col_types(this *Table, row *rowType.RowType) {
+	for i, col := range this.Columns {
+		switch col.Type {
+		case String:
+			if _, ok := (*row)[i].(string); !ok {
+				panic(fmt.Sprintf("col %s of table %s's type is string and you passed in a %T", col.Name, this.Name, (*row)[i]))
+			}
+		case Int:
+			if _, ok := (*row)[i].(int); !ok {
+				panic(fmt.Sprintf("col %s of table %s's type is int and you passed in a %T", col.Name, this.Name, (*row)[i]))
+			}
+		case Bool:
+			if _, ok := (*row)[i].(bool); !ok {
+				panic(fmt.Sprintf("col %s of table %s's type is bool and you passed in a %T", col.Name, this.Name, (*row)[i]))
+			}
+		}
+	}
 }
 
 func (this Table) get_col_index(col_name string) int {
 	println("trying to find " + col_name + " in " + this.Name)
 	for i, col := range this.Columns {
-		if col == col_name {
+		if col.Name == col_name {
 			return i
 		}
 	}
@@ -102,12 +140,12 @@ func make_select_byte_code(select_ *ast.Select) byte_code.Select {
 var tables = map[string]*Table{
 	"person": {
 		Name:    "person",
-		Columns: []string{"name", "email", "age", "state", "id"},
+		Columns: []ColInfo{{"name", String}, {"email", String}, {"age", Int}, {"state", String}, {"id", Int}},
 		r_Table: pubsub.New_R_Table(),
 	},
 	"todo": {
 		Name:    "todo",
-		Columns: []string{"title", "description", "done", "person_id"},
+		Columns: []ColInfo{{"title", String}, {"description", String}, {"done", Bool}, {"person_id", Int}, {"is_public", Bool}},
 		r_Table: pubsub.New_R_Table(),
 	},
 }
@@ -121,12 +159,6 @@ var compare_methods = map[string]func(value1 any, value2 any) bool{
 		case int:
 			return value1 == value2.(int)
 		case bool:
-			if value2 == "true" {
-				value2 = true
-			}
-			if value2 == "false" {
-				value2 = false
-			}
 			return value1 == value2.(bool)
 		default:
 			panic("not implemented")
@@ -139,12 +171,6 @@ var compare_methods = map[string]func(value1 any, value2 any) bool{
 		case int:
 			return value1 > value2.(int)
 		case bool:
-			if value2 == "true" {
-				value2 = true
-			}
-			if value2 == "false" {
-				value2 = false
-			}
 			return value1 == value2.(bool)
 		default:
 			panic("not implemented")
@@ -157,12 +183,6 @@ var compare_methods = map[string]func(value1 any, value2 any) bool{
 		case int:
 			return value1 < value2.(int)
 		case bool:
-			if value2 == "true" {
-				value2 = true
-			}
-			if value2 == "false" {
-				value2 = false
-			}
 			return value1 == value2.(bool)
 		default:
 			panic("not implemented")
@@ -206,7 +226,7 @@ func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_co
 
 func main() {
 	src := `SELECT person.name, person.email, id, (
-		SELECT todo.title, person.id FROM todo WHERE todo.person_id == person.id  AND person.age > 22
+		SELECT todo.title, person.id FROM todo WHERE todo.is_public == true
 		) FROM person WHERE person.age > 3 `
 
 	l := NewLexer(src)
@@ -222,12 +242,12 @@ func main() {
 
 	select_byte_code_to_observable(select_byte_code, option.None[*state_full_byte_code.Row_context]()).To_display()
 
-	tables["todo"].r_Table.Add(rowType.RowType{"clean", "make sure its clean", true, 1})
-	tables["todo"].r_Table.Add(rowType.RowType{"eat food", "make sure its clean", false, 1})
-	tables["todo"].r_Table.Add(rowType.RowType{"play music", "make sure its clean", false, 1})
-	tables["todo"].r_Table.Add(rowType.RowType{"do art", "make sure its clean", false, 2})
-	tables["person"].r_Table.Add(rowType.RowType{"shmulik", "email@gmail.com", 25, "state", 1})
-	tables["person"].r_Table.Add(rowType.RowType{"baby chana", "email@gmail.com", 20, "state", 2})
+	tables["todo"].insert(rowType.RowType{"clean", "make sure its clean", true, 1, false})
+	tables["todo"].insert(rowType.RowType{"eat food", "make sure its clean", false, 1, false})
+	tables["todo"].insert(rowType.RowType{"play music", "make sure its clean", false, 1, true})
+	tables["todo"].insert(rowType.RowType{"do art", "make sure its clean", false, 2, true})
+	tables["person"].insert(rowType.RowType{"shmuli", "email@gmail.com", 25, "state", 1})
+	tables["person"].insert(rowType.RowType{"the-doo-er", "email@gmail.com", 20, "state", 2})
 
 	os.Exit(0)
 

@@ -53,8 +53,10 @@ func (p *parser) parse_col_or_expr_lit() any {
 	token := p.tokens[p.pos]
 	p.pos += 1
 	if token.Type == STRING {
-
 		return token.Literal
+	}
+	if token.Type == TRUE || token.Type == FALSE {
+		return token.Type == TRUE
 	}
 	if token.Type == INT {
 		n, err := strconv.Atoi(token.Literal)
