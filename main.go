@@ -12,17 +12,64 @@ import (
 	"sql-compiler/state_full_byte_code"
 	. "sql-compiler/tokenizer"
 	option "sql-compiler/unwrap"
+	"strings"
 )
 
 /////
 
 type DataType int
+type RowSchema []ColInfo
+
+var NestedSelects = []RowSchema{
+	RowSchema{},
+	RowSchema{},
+	RowSchema{},
+	RowSchema{},
+	RowSchema{},
+	RowSchema{},
+}
 
 const (
 	String DataType = iota
 	Int
 	Bool
 )
+
+// any other enum values will be as a NestedSelect_index
+
+func (r RowSchema) to_string(depth int) string {
+	indent := strings.Repeat("  ", depth)
+	childIndent := strings.Repeat("  ", depth+1)
+
+	var b strings.Builder
+	b.WriteString("{\n")
+
+	for _, col := range r {
+		b.WriteString(childIndent)
+		b.WriteString(col.Name)
+		b.WriteByte(' ')
+		b.WriteString(col.Type.to_string(depth + 1))
+		b.WriteByte('\n')
+	}
+
+	b.WriteString(indent)
+	b.WriteByte('}')
+
+	return b.String()
+}
+
+func (this DataType) to_string(depth int) string {
+	switch this {
+	case String:
+		return "string"
+	case Int:
+		return "int"
+	case Bool:
+		return "bool"
+	default:
+		return NestedSelects[int(this)].to_string(depth + 1)
+	}
+}
 
 type ColInfo struct {
 	Name string
@@ -70,7 +117,7 @@ func (this Table) get_col_index(col_name string) int {
 	return -1
 }
 
-func get_Runtime_value_relative_location(select_ *ast.Select, col ast.Col) byte_code.Runtime_value_relative_location {
+func get_Runtime_value_relative_location_and_type(select_ *ast.Select, col ast.Col) (byte_code.Runtime_value_relative_location, DataType) {
 	var col_name string
 	switch col := col.(type) {
 	case ast.Plain_col_name:
@@ -92,7 +139,7 @@ func get_Runtime_value_relative_location(select_ *ast.Select, col ast.Col) byte_
 		table := tables[select_.Table]
 		index := table.get_col_index(col_name)
 		if index != -1 {
-			return byte_code.Runtime_value_relative_location{Amount_to_follow: 0, Col_index: index}
+			return byte_code.Runtime_value_relative_location{Amount_to_follow: 0, Col_index: index}, table.Columns[index].Type
 		}
 	}
 
@@ -100,12 +147,40 @@ Try_parent:
 	if select_.Parent_select.IsNone() {
 		panic("col " + col_name + " not found in select " + select_.Table)
 	}
-	return get_Runtime_value_relative_location(select_.Parent_select.Unwrap(), col).Add_one()
+	location_info, type_ := get_Runtime_value_relative_location_and_type(select_.Parent_select.Unwrap(), col)
+	return location_info.Add_one(), type_
 }
 
+func make_select_schema(this *ast.Select) RowSchema {
+	schema := []ColInfo{}
+	for _, col := range this.Selected_values {
+		switch col := col.(type) {
+		case ast.Select:
+			NestedSelects = append(NestedSelects, make_select_schema(&col))
+			schema = append(schema, ColInfo{Name: "", Type: DataType(len(NestedSelects) - 1)})
+		case ast.Plain_col_name:
+			_, type_ := get_Runtime_value_relative_location_and_type(this, col)
+			schema = append(schema, ColInfo{Name: string(col), Type: type_})
+		case ast.Table_access:
+			_, type_ := get_Runtime_value_relative_location_and_type(this, col)
+			schema = append(schema, ColInfo{Name: col.Col_name, Type: type_})
+		//////////
+		case int:
+			schema = append(schema, ColInfo{Name: "", Type: Int})
+		case string:
+			schema = append(schema, ColInfo{Name: "", Type: String})
+		case bool:
+			schema = append(schema, ColInfo{Name: "", Type: Bool})
+		default:
+			panic("no other types supported")
+		}
+	}
+	return schema
+}
 func get_Runtime_value_relative_location_if_Col(this *ast.Select, expr any) byte_code.Expression {
 	if col, ok := expr.(ast.Col); ok {
-		return get_Runtime_value_relative_location(this, col)
+		location_info, _ := get_Runtime_value_relative_location_and_type(this, col)
+		return location_info
 	}
 	return expr
 }
@@ -161,7 +236,7 @@ var compare_methods = map[string]func(value1 any, value2 any) bool{
 		case bool:
 			return value1 == value2.(bool)
 		default:
-			panic("not implemented")
+			panic(fmt.Sprintf("types %T and %T do not match", value1, value2))
 		}
 	},
 	">": func(value1 any, value2 any) bool {
@@ -173,7 +248,7 @@ var compare_methods = map[string]func(value1 any, value2 any) bool{
 		case bool:
 			return value1 == value2.(bool)
 		default:
-			panic("not implemented")
+			panic(fmt.Sprintf("types %T and %T do not match", value1, value2))
 		}
 	},
 	"<": func(value1 any, value2 any) bool {
@@ -185,7 +260,7 @@ var compare_methods = map[string]func(value1 any, value2 any) bool{
 		case bool:
 			return value1 == value2.(bool)
 		default:
-			panic("not implemented")
+			panic(fmt.Sprintf("types %T and %T do not match", value1, value2))
 		}
 	},
 }
@@ -241,6 +316,7 @@ func main() {
 	display.DisplayStruct(select_byte_code)
 
 	select_byte_code_to_observable(select_byte_code, option.None[*state_full_byte_code.Row_context]()).To_display()
+	println(make_select_schema(&select_).to_string(0))
 
 	tables["todo"].insert(rowType.RowType{"clean", "make sure its clean", true, 1, false})
 	tables["todo"].insert(rowType.RowType{"eat food", "make sure its clean", false, 1, false})
