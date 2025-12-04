@@ -79,6 +79,7 @@ func NewChannel(table *R_Table) *Channel {
 		table: table,
 	}
 }
+
 func NewIndex(col_indexing_on int, table *R_Table) Index {
 	return Index{
 		Col_indexing_on: col_indexing_on,

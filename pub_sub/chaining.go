@@ -89,3 +89,25 @@ func (this *Channel) To_display(row_schema unwrap.Option[rowType.RowSchema]) *Pr
 	link(this, p)
 	return p
 }
+
+///
+
+func (this *CustomSubscriber) Filter_on(predicate func(rowType.RowType) bool) ObservableI {
+	f := &Filter{predicate: predicate}
+	link(this, f)
+	return f
+}
+
+func (this *CustomSubscriber) Map_on(transformer func(rowType.RowType) rowType.RowType) ObservableI {
+	m := &Mapper{transformer: transformer}
+	link(this, m)
+	return m
+}
+
+func (this *CustomSubscriber) To_display(row_schema unwrap.Option[rowType.RowSchema]) *Printer {
+	p := &Printer{
+		RowSchema: row_schema,
+	}
+	link(this, p)
+	return p
+}

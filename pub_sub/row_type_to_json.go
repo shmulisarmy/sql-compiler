@@ -8,7 +8,7 @@ import (
 func RowTypeToJson(row *RowType, row_schema RowSchema) string {
 	res := "{"
 	for i, col := range *row {
-		res += "\"" + row_schema[i].Name + "\":"
+		res += "\\\"" + row_schema[i].Name + "\\\":"
 		switch row_schema[i].Type {
 		case String:
 			res += fmt.Sprintf("\\\"%s\\\"", col.(string))
@@ -21,11 +21,13 @@ func RowTypeToJson(row *RowType, row_schema RowSchema) string {
 			for row := range col.(ObservableI).Pull {
 				res += RowTypeToJson(&row, row_schema) + ","
 			}
+			res = res[:len(res)-1]
 			res += "]"
 		}
 		if i != len(*row)-1 {
 			res += ","
 		}
 	}
+	res += "}"
 	return res
 }
