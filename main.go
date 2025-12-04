@@ -6,7 +6,6 @@ import (
 	"sql-compiler/assert"
 	"sql-compiler/ast"
 	"sql-compiler/byte_code"
-	"sql-compiler/debugutil"
 	"sql-compiler/display"
 	pubsub "sql-compiler/pub_sub"
 	"sql-compiler/rowType"
@@ -96,8 +95,6 @@ func (this *Table) hasCol(col_name string) bool {
 
 func (this *Table) hasIndex(col_name string) bool {
 	for i := range this.R_Table.Indexes {
-		fmt.Println("this.r_Table.Indexes[i].Col_indexing_on", this.R_Table.Indexes[i].Col_indexing_on, "[", debugutil.Location(), "]")
-		fmt.Println("this.get_col_index(col_name)", this.get_col_index(col_name), "[", debugutil.Location(), "]")
 		if this.R_Table.Indexes[i].Col_indexing_on == this.get_col_index(col_name) {
 			return true
 		}

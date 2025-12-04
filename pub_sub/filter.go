@@ -13,7 +13,6 @@ func (this *Filter) set_subscribed_to(observable ObservableI) {
 }
 
 func (this *Filter) Pull(yield func(RowType) bool) {
-	println("pulling from a filter")
 	for row := range this.subscribed_to.Pull {
 		if this.predicate(row) {
 			if !yield(row) {

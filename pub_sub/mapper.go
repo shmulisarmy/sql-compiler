@@ -16,7 +16,6 @@ func (this *Mapper) set_subscribed_to(observable ObservableI) {
 }
 
 func (this *Mapper) Pull(yield func(RowType) bool) {
-	println("pulling from a table")
 	for row := range this.subscribed_to.Pull {
 		if !yield(this.transformer(row)) {
 			return

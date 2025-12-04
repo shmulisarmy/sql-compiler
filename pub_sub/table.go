@@ -24,7 +24,6 @@ func New_R_Table() R_Table {
 }
 
 func (this *R_Table) Pull(yield func(RowType) bool) {
-	println("pulling from a table")
 	for i, row := range this.rows {
 		if !this.is_deleted[i] {
 			if !yield(row) {
@@ -95,7 +94,6 @@ type Channel struct {
 }
 
 func (this *Channel) Pull(yield func(RowType) bool) {
-	println("pulling from a channel")
 	for _, row_index := range this.row_indexes {
 		if !yield(this.table.rows[row_index]) {
 			return
