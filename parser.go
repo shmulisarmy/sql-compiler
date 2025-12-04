@@ -94,7 +94,7 @@ func (p *parser) parseCol() ast.Col {
 }
 func (p *parser) parse_Select() ast.Select {
 	s := ast.Select{}
-	p.expect(SELECT)
+	p.optionallyExpect(SELECT)
 	var Value_to_select any
 	for !p.optionallyExpect(FROM) {
 		var alias string

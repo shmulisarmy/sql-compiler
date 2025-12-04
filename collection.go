@@ -13,14 +13,3 @@ func (this *R_Table) pull(yield func(RowType) bool) {
 		}
 	}
 }
-
-func (this *R_Table) add(row RowType) {
-	this.rows = append(this.rows, row)
-	this.is_deleted = append(this.is_deleted, false)
-	this.publish_add(row)
-}
-
-// //
-// type Index struct {
-// 	channels map[int]Channel
-// }

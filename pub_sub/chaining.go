@@ -62,3 +62,21 @@ func (this *Filter) To_display() *Printer {
 }
 
 ////
+
+func (this *Channel) Filter_on(predicate func(RowType) bool) ObservableI {
+	f := &Filter{predicate: predicate}
+	link(this, f)
+	return f
+}
+
+func (this *Channel) Map_on(transformer func(RowType) RowType) ObservableI {
+	m := &Mapper{transformer: transformer}
+	link(this, m)
+	return m
+}
+
+func (this *Channel) To_display() *Printer {
+	p := &Printer{}
+	link(this, p)
+	return p
+}

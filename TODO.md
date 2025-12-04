@@ -6,14 +6,15 @@ Project Description
 
 ### Todo
 
-- [ ] table column validation  
+- [ ] joins  
 - [ ] stream to client  
 - [ ] get updates from supa base or other update streamer  
-- [ ] index/channel on table  
 
 ### In Progress
 
+- [ ] index/channel on table, (added but not used in with sql yet)  
 
 ### Done ✓
 
+- [x] table column validation  
 

@@ -82,6 +82,16 @@ type Table struct {
 	r_Table pubsub.R_Table
 }
 
+func (this *Table) Index_on(col_name string) *pubsub.Index {
+	for i := range this.r_Table.Indexes {
+		if this.r_Table.Indexes[i].Col_indexing_on == this.get_col_index(col_name) {
+			return &this.r_Table.Indexes[i]
+		}
+	}
+	this.r_Table.Indexes = append(this.r_Table.Indexes, pubsub.NewIndex(this.get_col_index(col_name), &this.r_Table))
+	return &this.r_Table.Indexes[len(this.r_Table.Indexes)-1]
+}
+
 func (this *Table) insert(row rowType.RowType) {
 	assert.AssertEq(len(row), len(this.Columns), fmt.Sprintf("rows in table %s must have %d columns and you passed a row that has %d columns", this.Name, len(this.Columns), len(row)))
 	validate_col_types(this, &row)
@@ -108,7 +118,6 @@ func validate_col_types(this *Table, row *rowType.RowType) {
 }
 
 func (this Table) get_col_index(col_name string) int {
-	println("trying to find " + col_name + " in " + this.Name)
 	for i, col := range this.Columns {
 		if col.Name == col_name {
 			return i
@@ -308,9 +317,17 @@ func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_co
 }
 
 func main() {
+	// test_compilation()
+	// tables["person"].r_Table.Filter_on(func(rt rowType.RowType) bool { return rt[0].(string) == "shmuli" }).To_display()
+	name_index := tables["person"].Index_on("name")
+	name_index.Get_or_create_channel(rowType.RowType{"shmuli", "email@gmail.com", 25, "state", 1}).To_display()
+	tables["person"].insert(rowType.RowType{"shmuli", "email@gmail.com", 25, "state", 1})
+	tables["person"].insert(rowType.RowType{"berel", "djbkemail@gmail.com", 25, "state", 1})
+}
+func test_compilation() {
 	src := `SELECT person.name, person.email, id, (
 		SELECT todo.title as epic_title, person.id FROM todo WHERE todo.is_public == true
-		), (
+		), (. 
 		SELECT todo.title as epic_title FROM todo WHERE todo.is_public == true
 		) as todo2 FROM person WHERE person.age > 3 `
 
