@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"sql-compiler/rowType"
 	. "sql-compiler/tokenizer"
 	"sql-compiler/unwrap"
 	. "sql-compiler/unwrap"
@@ -37,6 +38,8 @@ type Select struct {
 	Table           string
 	Wheres          []Where
 	Selected_values []Selected_value
+	///type info
+	Row_schema rowType.RowSchema
 	// compile time (post parsing stage) inserted
 	Parent_select Option[*Select]
 }

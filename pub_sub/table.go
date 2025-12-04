@@ -1,13 +1,13 @@
 package pubsub
 
 import (
-	. "sql-compiler/rowType"
+	"sql-compiler/rowType"
 	"sql-compiler/utils"
 )
 
 type R_Table struct {
 	Observable
-	rows       []RowType
+	rows       []rowType.RowType
 	is_deleted []bool //use index to find out if the row at that index is deleted
 	Indexes    []Index
 }
@@ -17,13 +17,13 @@ func New_R_Table() R_Table {
 		Observable: Observable{
 			Subscribers: []Subscriber{},
 		},
-		rows:       []RowType{},
+		rows:       []rowType.RowType{},
 		is_deleted: []bool{},
 		Indexes:    []Index{},
 	}
 }
 
-func (this *R_Table) Pull(yield func(RowType) bool) {
+func (this *R_Table) Pull(yield func(rowType.RowType) bool) {
 	for i, row := range this.rows {
 		if !this.is_deleted[i] {
 			if !yield(row) {
@@ -33,7 +33,7 @@ func (this *R_Table) Pull(yield func(RowType) bool) {
 	}
 }
 
-func (this *R_Table) Add(row RowType) {
+func (this *R_Table) Add(row rowType.RowType) {
 	this.rows = append(this.rows, row)
 	this.is_deleted = append(this.is_deleted, false)
 	///
@@ -57,7 +57,7 @@ type Index struct {
 	table           *R_Table
 }
 
-func (this *Index) Get_or_create_channel(row RowType) *Channel {
+func (this *Index) Get_or_create_channel(row rowType.RowType) *Channel {
 	if _, ok := this.Channels[row[this.Col_indexing_on].(string)]; !ok {
 		this.Channels[row[this.Col_indexing_on].(string)] = NewChannel(this.table)
 	}
@@ -93,7 +93,7 @@ type Channel struct {
 	table *R_Table //i want to remove the need to have this field by not using a generic pull, but rather use a pull method that takes in a reference to the table
 }
 
-func (this *Channel) Pull(yield func(RowType) bool) {
+func (this *Channel) Pull(yield func(rowType.RowType) bool) {
 	for _, row_index := range this.row_indexes {
 		if !yield(this.table.rows[row_index]) {
 			return

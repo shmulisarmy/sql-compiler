@@ -9,78 +9,17 @@ import (
 	"sql-compiler/display"
 	pubsub "sql-compiler/pub_sub"
 	"sql-compiler/rowType"
+	. "sql-compiler/rowType"
 	"sql-compiler/state_full_byte_code"
 	. "sql-compiler/tokenizer"
 	option "sql-compiler/unwrap"
 	. "sql-compiler/utils"
 	"strconv"
-	"strings"
 )
-
-/////
-
-type DataType int
-type RowSchema []ColInfo
-
-var NestedSelects = []RowSchema{
-	RowSchema{},
-	RowSchema{},
-	RowSchema{},
-	RowSchema{},
-	RowSchema{},
-	RowSchema{},
-} //DataType enum is also being resume to index into this array when its higher than all the regular enum values
-
-const (
-	String DataType = iota
-	Int
-	Bool
-)
-
-// any other enum values will be as a NestedSelect_index
-
-func (r RowSchema) to_string(depth int) string {
-	indent := strings.Repeat("  ", depth)
-	childIndent := strings.Repeat("  ", depth+1)
-
-	var b strings.Builder
-	b.WriteString("{\n")
-
-	for _, col := range r {
-		b.WriteString(childIndent)
-		b.WriteString(col.Name)
-		b.WriteByte(' ')
-		b.WriteString(col.Type.to_string(depth + 1))
-		b.WriteByte('\n')
-	}
-
-	b.WriteString(indent)
-	b.WriteByte('}')
-
-	return b.String()
-}
-
-func (this DataType) to_string(depth int) string {
-	switch this {
-	case String:
-		return "string"
-	case Int:
-		return "int"
-	case Bool:
-		return "bool"
-	default:
-		return NestedSelects[int(this)].to_string(depth + 1)
-	}
-}
-
-type ColInfo struct {
-	Name string
-	Type DataType
-}
 
 type Table struct {
 	Name    string
-	Columns []ColInfo
+	Columns []rowType.ColInfo
 	R_Table pubsub.R_Table
 }
 
@@ -193,39 +132,38 @@ Try_parent:
 	return location_info.Add_one(), type_
 }
 
-func make_row_schema_from_select(this *ast.Select) RowSchema {
-	schema := []ColInfo{}
-	for _, col := range this.Selected_values {
+func Recursively_set_selects_row_schema(select_ *ast.Select) RowSchema {
+	for _, col := range select_.Selected_values {
 		switch col_value := col.Value_to_select.(type) {
 		case ast.Select:
-			NestedSelects = append(NestedSelects, make_row_schema_from_select(&col_value))
-			schema = append(schema, ColInfo{Name: col.Alias, Type: DataType(len(NestedSelects) - 1)})
+			NestedSelectsRowSchema = append(NestedSelectsRowSchema, Recursively_set_selects_row_schema(&col_value))
+			select_.Row_schema = append(select_.Row_schema, ColInfo{Name: col.Alias, Type: DataType(len(NestedSelectsRowSchema) - 1)})
 		case ast.Plain_col_name:
-			_, type_ := get_Runtime_value_relative_location_and_type(this, col_value)
+			_, type_ := get_Runtime_value_relative_location_and_type(select_, col_value)
 			schema_col_name := string(col_value)
 			if col.Alias != "" {
 				schema_col_name = col.Alias
 			}
-			schema = append(schema, ColInfo{Name: schema_col_name, Type: type_})
+			select_.Row_schema = append(select_.Row_schema, ColInfo{Name: schema_col_name, Type: type_})
 		case ast.Table_access:
-			_, type_ := get_Runtime_value_relative_location_and_type(this, col_value)
+			_, type_ := get_Runtime_value_relative_location_and_type(select_, col_value)
 			schema_col_name := col_value.Col_name
 			if col.Alias != "" {
 				schema_col_name = col.Alias
 			}
-			schema = append(schema, ColInfo{Name: schema_col_name, Type: type_})
+			select_.Row_schema = append(select_.Row_schema, ColInfo{Name: schema_col_name, Type: type_})
 		//////////
 		case int:
-			schema = append(schema, ColInfo{Name: col.Alias, Type: Int})
+			select_.Row_schema = append(select_.Row_schema, ColInfo{Name: col.Alias, Type: Int})
 		case string:
-			schema = append(schema, ColInfo{Name: col.Alias, Type: String})
+			select_.Row_schema = append(select_.Row_schema, ColInfo{Name: col.Alias, Type: String})
 		case bool:
-			schema = append(schema, ColInfo{Name: col.Alias, Type: Bool})
+			select_.Row_schema = append(select_.Row_schema, ColInfo{Name: col.Alias, Type: Bool})
 		default:
 			panic("no other types supported")
 		}
 	}
-	return schema
+	return select_.Row_schema
 }
 func get_Runtime_value_relative_location_if_Col(this *ast.Select, expr any) byte_code.Expression {
 	if col, ok := expr.(ast.Col); ok {
@@ -331,15 +269,16 @@ func filter(row_context state_full_byte_code.Row_context, wheres []byte_code.Whe
 	return true
 }
 
-func map_over(row_context state_full_byte_code.Row_context, selected_values_byte_code []byte_code.Expression) rowType.RowType {
+func map_over(row_context state_full_byte_code.Row_context, selected_values_byte_code []byte_code.Expression, row_schema rowType.RowSchema) rowType.RowType {
 	row := rowType.RowType{}
-	for _, select_value_byte_code := range selected_values_byte_code { ///select_value_byte_code could just be a plain value
+	for i, select_value_byte_code := range selected_values_byte_code { ///select_value_byte_code could just be a plain value
 		switch select_value_byte_code := select_value_byte_code.(type) {
 		case byte_code.Runtime_value_relative_location:
 			row = append(row, row_context.Get_value(select_value_byte_code))
 		case byte_code.Select:
 			childs_row_context := state_full_byte_code.Row_context{Row: row_context.Row, Parent_context: option.Some(&row_context)}
-			row = append(row, select_byte_code_to_observable(select_value_byte_code, option.Some(&childs_row_context)))
+			childs_row_schema := NestedSelectsRowSchema[row_schema[i].Type]
+			row = append(row, select_byte_code_to_observable(select_value_byte_code, option.Some(&childs_row_context), childs_row_schema))
 		default:
 			row = append(row, select_value_byte_code)
 		}
@@ -347,7 +286,7 @@ func map_over(row_context state_full_byte_code.Row_context, selected_values_byte
 	return row
 }
 
-func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_context option.Option[*state_full_byte_code.Row_context]) pubsub.ObservableI {
+func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_context option.Option[*state_full_byte_code.Row_context], row_schema rowType.RowSchema) pubsub.ObservableI {
 	var current_observable pubsub.ObservableI
 	if select_byte_code.Col_and_value_to_index_by.Col != "" {
 		//ints are cast to strings when placed and queried from indexes
@@ -369,11 +308,14 @@ func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_co
 		current_observable = &tables.Get(select_byte_code.Table_name).R_Table
 	}
 
-	return current_observable.Filter_on(func(row rowType.RowType) bool {
+	current_observable = current_observable.Filter_on(func(row rowType.RowType) bool {
 		return filter(state_full_byte_code.Row_context{Row: row, Parent_context: parent_context}, select_byte_code.Wheres_byte_code)
 	}).Map_on(func(row rowType.RowType) rowType.RowType {
-		return map_over(state_full_byte_code.Row_context{Row: row, Parent_context: parent_context}, select_byte_code.Selected_values_byte_code)
+		return map_over(state_full_byte_code.Row_context{Row: row, Parent_context: parent_context}, select_byte_code.Selected_values_byte_code, row_schema)
 	})
+	current_observable.(*pubsub.Mapper).RowSchema = option.Some(row_schema)
+	return current_observable
+
 }
 
 func main() {
@@ -384,8 +326,8 @@ func test_compilation() {
 	todos_table := tables.Get("todo")
 	todos_table.Index_on("person_id")
 
-	src := `SELECT person.name, "69" as noice, person.email, id, (
-		SELECT todo.title as epic_title, person.id FROM todo WHERE todo.person_id == person.id
+	src := `SELECT person.name, person.email, person.id, (
+		SELECT todo.title as epic_title, person.name as fuck_name, person.id FROM todo WHERE todo.person_id == person.id
 		), (
 		SELECT todo.title as epic_title FROM todo WHERE todo.is_public == true
 		) as todo2 FROM person WHERE person.age > 3 `
@@ -397,12 +339,13 @@ func test_compilation() {
 	}
 	select_ := parser.parse_Select()
 	select_.Recursively_link_children()
+	Recursively_set_selects_row_schema(&select_)
 	display.DisplayStruct(select_)
 	select_byte_code := make_select_byte_code(&select_)
 	display.DisplayStruct(select_byte_code)
 
-	select_byte_code_to_observable(select_byte_code, option.None[*state_full_byte_code.Row_context]()).To_display()
-	println(make_row_schema_from_select(&select_).to_string(0))
+	select_byte_code_to_observable(select_byte_code, option.None[*state_full_byte_code.Row_context](), select_.Row_schema).To_display(option.Some(select_.Row_schema))
+	println(select_.Row_schema.To_string(0))
 
 	todos_table.insert(rowType.RowType{"eat food", "make sure its clean", false, 1, false})
 	todos_table.insert(rowType.RowType{"play music", "make sure its clean", false, 1, true})

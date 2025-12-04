@@ -1,6 +1,9 @@
 package pubsub
 
-import . "sql-compiler/rowType"
+import (
+	"sql-compiler/rowType"
+	"sql-compiler/unwrap"
+)
 
 type Observable struct {
 	Subscribers []Subscriber
@@ -10,20 +13,20 @@ func (this *Observable) Add_sub(subscriber Subscriber) {
 	this.Subscribers = append(this.Subscribers, subscriber)
 }
 
-func (this *Observable) Publish_Add(row RowType) {
+func (this *Observable) Publish_Add(row rowType.RowType) {
 	for _, subscriber := range this.Subscribers {
 
 		subscriber.on_Add(row)
 	}
 }
 
-func (this *Observable) Publish_remove(row RowType) {
+func (this *Observable) Publish_remove(row rowType.RowType) {
 	for _, subscriber := range this.Subscribers {
 		subscriber.on_remove(row)
 	}
 }
 
-func (this *Observable) Publish_Publish(old_row RowType, new_row RowType) {
+func (this *Observable) Publish_Publish(old_row rowType.RowType, new_row rowType.RowType) {
 	for _, subscriber := range this.Subscribers {
 		subscriber.on_update(old_row, new_row)
 	}
@@ -37,20 +40,20 @@ func link(observable ObservableI, subscriber Subscriber) {
 type ObservableI interface {
 	Add_sub(subscriber Subscriber) //will get from Observable
 	///
-	Pull(yield func(RowType) bool)
-	Publish_Add(row RowType)
-	Publish_remove(row RowType)
-	Publish_Publish(old_row RowType, new_row RowType)
+	Pull(yield func(rowType.RowType) bool)
+	Publish_Add(row rowType.RowType)
+	Publish_remove(row rowType.RowType)
+	Publish_Publish(old_row rowType.RowType, new_row rowType.RowType)
 	interface {
-		Filter_on(predicate func(RowType) bool) ObservableI
-		Map_on(transformer func(RowType) RowType) ObservableI
-		To_display() *Printer
+		Filter_on(predicate func(rowType.RowType) bool) ObservableI
+		Map_on(transformer func(rowType.RowType) rowType.RowType) ObservableI
+		To_display(unwrap.Option[rowType.RowSchema]) *Printer
 	}
 }
 type Subscriber interface {
 	set_subscribed_to(observable ObservableI)
 	///
-	on_Add(RowType)
-	on_remove(RowType)
-	on_update(old_row RowType, new_row RowType)
+	on_Add(row rowType.RowType)
+	on_remove(row rowType.RowType)
+	on_update(old_row rowType.RowType, new_row rowType.RowType)
 }
