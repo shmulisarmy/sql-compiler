@@ -1,6 +1,6 @@
 package singlevaluesubs
 
-type Broadcaster[T any] struct {
+type Broadcaster struct {
 	subscribers []func(int64)
 }
 
