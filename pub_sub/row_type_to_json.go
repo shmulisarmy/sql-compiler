@@ -19,7 +19,8 @@ func RowTypeToJson(row *RowType, row_schema RowSchema) string {
 		default:
 			res += "["
 			for row := range col.(ObservableI).Pull {
-				res += RowTypeToJson(&row, row_schema) + ","
+				childs_row_schema := NestedSelectsRowSchema[row_schema[i].Type]
+				res += RowTypeToJson(&row, childs_row_schema) + ","
 			}
 			res = res[:len(res)-1]
 			res += "]"

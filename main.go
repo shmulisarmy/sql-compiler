@@ -313,6 +313,7 @@ func select_byte_code_to_observable(select_byte_code byte_code.Select, parent_co
 	}).Map_on(func(row rowType.RowType) rowType.RowType {
 		return map_over(state_full_byte_code.Row_context{Row: row, Parent_context: parent_context}, select_byte_code.Selected_values_byte_code, row_schema)
 	})
+
 	current_observable.(*pubsub.Mapper).RowSchema = option.Some(row_schema)
 	return current_observable
 
@@ -326,8 +327,8 @@ func test_compilation() {
 	todos_table := tables.Get("todo")
 	todos_table.Index_on("person_id")
 
-	src := `SELECT person.email, person.name , person.id, (
-		SELECT todo.title as epic_title, person.name, person.id FROM todo WHERE todo.person_id == person.id
+	src := `SELECT person.email, person.name, person.id, (
+		SELECT todo.title as epic_title, person.name as author, person.id FROM todo WHERE todo.person_id == person.id
 		), (
 		SELECT todo.title as epic_title FROM todo WHERE todo.is_public == true
 		) as todo2 FROM person WHERE person.age > 3 `
