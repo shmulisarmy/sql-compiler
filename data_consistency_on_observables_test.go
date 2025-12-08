@@ -21,7 +21,7 @@ func Test_Adds(t *testing.T) {
 		},
 		rowType.ColInfo{
 			Type: rowType.Int,
-			Name: "person_i",
+			Name: "person_id",
 		},
 	}
 	todo_table := pubsub.New_R_Table()
