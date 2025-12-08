@@ -65,8 +65,9 @@ func (this *R_Table) Update_where_eq(row_schema rowType.RowSchema, field string,
 	if array_index == -1 {
 		panic("not found")
 	}
+	old_row := this.Rows[array_index]
 	this.Rows[array_index] = new_row
-	this.Publish_Update(this.Rows[array_index], new_row)
+	this.Publish_Update(old_row, new_row)
 }
 
 func (this *R_Table) find_row_index(row_schema rowType.RowSchema, field string, value any) int {
