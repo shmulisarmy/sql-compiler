@@ -20,7 +20,7 @@ func RowTypeToJson(row *RowType, row_schema RowSchema) string {
 			res += fmt.Sprintf("%t", col.(bool))
 		default:
 			childs_row_schema := NestedSelectsRowSchema[row_schema[i].Type]
-			res += observerToJson(col, childs_row_schema)
+			res += ObserverToJson(col.(ObservableI), childs_row_schema)
 		}
 		if i != len(*row)-1 {
 			res += ","
@@ -30,10 +30,10 @@ func RowTypeToJson(row *RowType, row_schema RowSchema) string {
 	return res
 }
 
-func observerToJson(col Actually_Col, row_schema RowSchema) string {
+func ObserverToJson(col ObservableI, row_schema RowSchema) string {
 	res := "{"
 	has_at_least_one := false
-	for row := range col.(ObservableI).Pull {
+	for row := range col.Pull {
 		primary_key := row[0].(string)
 		res += "\"" + primary_key + "\":"
 		res += RowTypeToJson(&row, row_schema) + ","
