@@ -10,6 +10,16 @@ type RowType []Actually_Col
 type DataType int
 type RowSchema []ColInfo
 
+func (this RowSchema) Find_field_index(field_name string) int {
+	for i, field := range this {
+		if field_name == field.Name {
+			return i
+		}
+	}
+	panic("not found")
+
+}
+
 var NestedSelectsRowSchema = []RowSchema{
 	RowSchema{},
 	RowSchema{},

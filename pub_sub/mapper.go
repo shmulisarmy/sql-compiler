@@ -33,7 +33,7 @@ func (this *Mapper) on_remove(row rowType.RowType) {
 }
 
 func (this *Mapper) on_update(old_row rowType.RowType, new_row rowType.RowType) {
-	this.Publish_Publish(this.transformer(old_row), this.transformer(new_row))
+	this.Publish_Update(this.transformer(old_row), this.transformer(new_row))
 }
 
 func (this *Mapper) String() string {

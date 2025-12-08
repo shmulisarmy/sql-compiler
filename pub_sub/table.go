@@ -49,6 +49,52 @@ func (this *R_Table) Add(row rowType.RowType) {
 	this.Publish_Add(row)
 }
 
+// this is more for testing purposes because when integrating with the actual database (receiving and reacting to update events wel'e be updating by id)
+func (this *R_Table) Remove_where_eq(row_schema rowType.RowSchema, field string, value any) {
+	array_index := this.find_row_index(row_schema, field, value)
+	if array_index == -1 {
+		panic("not found")
+	}
+	this.is_deleted[array_index] = true
+	this.Publish_remove(this.Rows[array_index])
+}
+
+// this is more for testing purposes because when integrating with the actual database (receiving and reacting to update events wel'e be updating by id)
+func (this *R_Table) Update_where_eq(row_schema rowType.RowSchema, field string, value any, new_row rowType.RowType) {
+	array_index := this.find_row_index(row_schema, field, value)
+	if array_index == -1 {
+		panic("not found")
+	}
+	old_row := this.Rows[array_index]
+	this.Rows[array_index] = new_row
+	this.Publish_Update(old_row, new_row)
+}
+
+func (this *R_Table) find_row_index(row_schema rowType.RowSchema, field string, value any) int {
+
+	// look through the rows using the indexes
+	for i := range this.Indexes {
+		if this.Indexes[i].Col_indexing_on == row_schema.Find_field_index(field) {
+			if channel, ok := this.Indexes[i].Channels[utils.String_or_num_to_string(value)]; ok {
+				// assert.AssertEq(len(channel.row_indexes), 1)
+				return channel.row_indexes[0]
+			}
+		}
+
+	}
+
+	// look through the rows manually
+	for i := range this.Rows {
+		if !this.is_deleted[i] {
+			if this.Rows[i][row_schema.Find_field_index(field)] == value {
+				return i
+			}
+		}
+	}
+
+	return -1
+}
+
 // ///
 
 type Index struct {

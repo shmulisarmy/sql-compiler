@@ -2,13 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"sql-compiler/compare"
+	"sql-compiler/assert"
 	pubsub "sql-compiler/pub_sub"
 	"sql-compiler/rowType"
 	"testing"
 )
 
-func Test_Adds(t *testing.T) {
+func TestThatFilterIsAlwaysInSync(t *testing.T) {
 
 	row_schema := rowType.RowSchema{
 		rowType.ColInfo{
@@ -32,31 +32,28 @@ func Test_Adds(t *testing.T) {
 	todo_table.Add(rowType.RowType{
 		"clean the other room", true, 1,
 	})
-
-	expected := map[string]map[string]any{
-		"clean the room": {
-			"title":     "clean the room",
-			"completed": true,
-			"person_id": 1,
-		},
-		"clean the other room": {
-			"title":     "clean the other room",
-			"completed": true,
-			"person_id": 1,
-		},
-	}
-
-	json_string := pubsub.ObserverToJson(&todo_table, row_schema)
+	todo_table.Add(rowType.RowType{
+		"take out the trash", false, 1,
+	})
+	filter := todo_table.Filter_on(func(rt rowType.RowType) bool {
+		return rt[1].(bool) == true
+	})
+	json_string := pubsub.ObserverToJson(filter, row_schema)
 	var actual map[string]map[string]any
 	err := json.Unmarshal([]byte(json_string), &actual)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	std_message, err := compare.Compare(expected, actual, "")
-	println(std_message)
+	assert.AssertEq(len(actual), 2)
+	todo_table.Add(rowType.RowType{
+		"finish making food", true, 1,
+	})
+	json_string = pubsub.ObserverToJson(filter, row_schema)
+	err = json.Unmarshal([]byte(json_string), &actual)
 	if err != nil {
 		t.Fatal(err)
 	}
+	assert.AssertEq(len(actual), 3)
 
 }

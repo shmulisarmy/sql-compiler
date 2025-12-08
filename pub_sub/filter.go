@@ -36,6 +36,6 @@ func (this *Filter) on_remove(row RowType) {
 
 func (this *Filter) on_update(old_row RowType, new_row RowType) {
 	if this.predicate(new_row) {
-		this.Publish_Publish(old_row, new_row)
+		this.Publish_Update(old_row, new_row)
 	}
 }
