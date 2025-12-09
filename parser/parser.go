@@ -1,56 +1,56 @@
-package main
+package parser
 
 import (
 	"fmt"
 	"sql-compiler/ast"
-	. "sql-compiler/tokenizer"
+	. "sql-compiler/parser/tokenizer"
 	"strconv"
 )
 
-type parser struct {
-	tokens []Token
+type Parser struct {
+	Tokens []Token
 	pos    int
 }
 
-func (p *parser) expect(tt TokenType) {
-	if p.tokens[p.pos].Type != tt {
-		panic("expected " + string(tt) + " but got " + string(p.tokens[p.pos].Type))
+func (p *Parser) expect(tt TokenType) {
+	if p.Tokens[p.pos].Type != tt {
+		panic("expected " + string(tt) + " but got " + string(p.Tokens[p.pos].Type))
 	}
 	p.pos++
 }
-func (p *parser) expectIdent() string {
-	if p.tokens[p.pos].Type != IDENT {
-		panic(fmt.Sprintf("expected IDENT but got %s at %d", p.tokens[p.pos].Type, p.tokens[p.pos].Pos))
+func (p *Parser) expectIdent() string {
+	if p.Tokens[p.pos].Type != IDENT {
+		panic(fmt.Sprintf("expected IDENT but got %s at %d", p.Tokens[p.pos].Type, p.Tokens[p.pos].Pos))
 	}
-	ident := p.tokens[p.pos].Literal
+	ident := p.Tokens[p.pos].Literal
 	p.pos++
 	return ident
 }
-func (p *parser) expectIdentOf(ident string) {
-	if p.tokens[p.pos].Type != IDENT {
+func (p *Parser) expectIdentOf(ident string) {
+	if p.Tokens[p.pos].Type != IDENT {
 		panic("expected IDENT")
 	}
-	if p.tokens[p.pos].Literal != ident {
+	if p.Tokens[p.pos].Literal != ident {
 		panic("expected IDENT " + ident)
 	}
 	p.pos++
 }
-func (p *parser) optionallyExpect(tt TokenType) bool {
+func (p *Parser) optionallyExpect(tt TokenType) bool {
 	if !p.inrange() {
 		return false
 	}
-	if p.tokens[p.pos].Type != tt {
+	if p.Tokens[p.pos].Type != tt {
 		return false
 	}
 	p.pos++
 	return true
 }
-func (p *parser) inrange() bool {
-	return p.pos < len(p.tokens)
+func (p *Parser) inrange() bool {
+	return p.pos < len(p.Tokens)
 }
-func (p *parser) parse_col_or_expr_lit() any {
+func (p *Parser) parse_col_or_expr_lit() any {
 	walk_back_pos := p.pos
-	token := p.tokens[p.pos]
+	token := p.Tokens[p.pos]
 	p.pos += 1
 	if token.Type == STRING {
 		return token.Literal
@@ -68,9 +68,9 @@ func (p *parser) parse_col_or_expr_lit() any {
 	p.pos = walk_back_pos
 	return p.parseCol()
 }
-func (p *parser) parse_simple_expr() ast.Where {
+func (p *Parser) parse_simple_expr() ast.Where {
 	Value1 := p.parse_col_or_expr_lit()
-	operator := p.tokens[p.pos].Type
+	operator := p.Tokens[p.pos].Type
 	if operator != LT && operator != GT && operator != EQ && operator != LE && operator != GE {
 		panic("expected ASSIGN or LT or GT or LE or GE instead of " + string(operator))
 	}
@@ -82,7 +82,7 @@ func (p *parser) parse_simple_expr() ast.Where {
 		Value2:   p.parse_col_or_expr_lit(),
 	}
 }
-func (p *parser) parseCol() ast.Col {
+func (p *Parser) parseCol() ast.Col {
 	col_or_table_name := p.expectIdent()
 	if p.optionallyExpect(DOT) {
 		return ast.Table_access{
@@ -92,14 +92,14 @@ func (p *parser) parseCol() ast.Col {
 	}
 	return ast.Plain_col_name(col_or_table_name)
 }
-func (p *parser) parse_Select() ast.Select {
+func (p *Parser) Parse_Select() ast.Select {
 	s := ast.Select{}
 	p.optionallyExpect(SELECT)
 	var Value_to_select any
 	for !p.optionallyExpect(FROM) {
 		var alias string
 		if p.optionallyExpect(LPAREN) {
-			Value_to_select = p.parse_Select()
+			Value_to_select = p.Parse_Select()
 			p.expect(RPAREN)
 			alias = Value_to_select.(ast.Select).Table
 		} else {
@@ -116,7 +116,7 @@ func (p *parser) parse_Select() ast.Select {
 	}
 	s.Table = p.expectIdent()
 	p.expect(WHERE)
-	for p.inrange() && (p.tokens[p.pos].Type != RPAREN) {
+	for p.inrange() && (p.Tokens[p.pos].Type != RPAREN) {
 		where := p.parse_simple_expr()
 		s.Wheres = append(s.Wheres, where)
 		if !p.optionallyExpect(AND) {
