@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"encoding/json"
 	"fmt"
 	"sql-compiler/assert"
 	. "sql-compiler/compiler/rowType"
@@ -45,4 +46,18 @@ func ObserverToJson(col ObservableI, row_schema RowSchema) string {
 	assert.Assert(res[len(res)-1] == ',')
 	res = strings.TrimSuffix(res, ",")
 	return res + "}"
+}
+
+func ObserverToArrayOfMaps(col ObservableI, row_schema RowSchema) []map[any]any {
+	result := []map[any]any{}
+	for row := range col.Pull {
+		var object map[any]any
+		jsonBytes := []byte(RowTypeToJson(&row, row_schema))
+		err := json.Unmarshal(jsonBytes, &object)
+		if err != nil {
+			panic(err)
+		}
+		result = append(result, object)
+	}
+	return result
 }

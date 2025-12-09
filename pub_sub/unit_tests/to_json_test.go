@@ -25,7 +25,7 @@ func TestThat_Table_To_Json_Is_Valid_Json(t *testing.T) {
 			Name: "person_id",
 		},
 	}
-	todo_table := pubsub.New_R_Table()
+	todo_table := pubsub.New_R_Table(row_schema)
 
 	todo_table.Add(rowType.RowType{
 		"clean the room", true, 1,

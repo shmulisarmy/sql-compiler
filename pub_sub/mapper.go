@@ -47,3 +47,7 @@ func (this *Mapper) String() string {
 	}
 	return res + "]"
 }
+
+func (this *Mapper) GetRowSchema() rowType.RowSchema {
+	return this.RowSchema.Unwrap()
+}

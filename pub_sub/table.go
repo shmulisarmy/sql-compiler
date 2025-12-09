@@ -10,9 +10,10 @@ type R_Table struct {
 	Rows       []rowType.RowType
 	is_deleted []bool //use index to find out if the row at that index is deleted
 	Indexes    []Index
+	rowSchema  []rowType.ColInfo
 }
 
-func New_R_Table() R_Table {
+func New_R_Table(Columns []rowType.ColInfo) R_Table {
 	return R_Table{
 		Observable: Observable{
 			Subscribers: []Subscriber{},
@@ -20,6 +21,7 @@ func New_R_Table() R_Table {
 		Rows:       []rowType.RowType{},
 		is_deleted: []bool{},
 		Indexes:    []Index{},
+		rowSchema:  Columns,
 	}
 }
 
@@ -146,4 +148,8 @@ func (this *Channel) Pull(yield func(rowType.RowType) bool) {
 			return
 		}
 	}
+}
+
+func (table *R_Table) GetRowSchema() rowType.RowSchema {
+	return table.rowSchema
 }

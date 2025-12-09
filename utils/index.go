@@ -18,3 +18,15 @@ func String_or_num_to_string(value any) string {
 func Capitalize(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
+
+func CompareSlices[T comparable](a, b []T) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
+}
