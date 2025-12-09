@@ -1,3 +1,7 @@
+// the point of this structure is to take an observable (that has subqueries) and subscribe to it
+// in a tree like manner where as it goes down into a subquery it builds up a path (that gets put into the message), and whatever is receiving
+// the messages can use that to rebuild the structure in a tree like manner/do anything that requires understanding the data in terms of a tree like structure
+//
 // right now, the only way to test the functionality in this file is to run an
 // integration test that includes the front end where @run_tests.tsx the front end has two
 // objects that are a reflection of how a query view that gets updated via an
@@ -35,31 +39,23 @@ type eventEmitterTree struct {
 }
 
 func (receiver *eventEmitterTree) syncFromObservable(obs *pubsub.Mapper, path string) {
-	// switch obs := obs.(type) {
-	// case *pubsub.Mapper:
-	// 	for row := range obs.Pull {
-	// 		pubsub.RowTypeToJson(&row, obs.RowSchema.Unwrap())
-	// 	}
-	// default:
-	// 	panic("expected mapper")
-	// }
 	obs.Add_sub(&pubsub.CustomSubscriber{
 		OnAddFunc: func(item rowType.RowType) {
 			primary_key := item[0].(string)
-			receiver.on_message(SyncMessage{Type: SyncTypeAdd, Data: pubsub.RowTypeToJson(&item, obs.RowSchema.Unwrap()), Path: path + path_separator + primary_key})
-			receiver.syncFromObservable_row(item, path+path_separator+primary_key, obs.RowSchema.Unwrap())
+			receiver.on_message(SyncMessage{Type: SyncTypeAdd, Data: pubsub.RowTypeToJson(&item, obs.GetRowSchema()), Path: path + path_separator + primary_key})
+			receiver.syncFromObservable_row(item, path+path_separator+primary_key, obs.GetRowSchema())
 		},
 		OnRemoveFunc: func(item rowType.RowType) {
 			primary_key := item[0].(string)
-			receiver.on_message(SyncMessage{Type: SyncTypeRemove, Data: pubsub.RowTypeToJson(&item, obs.RowSchema.Unwrap()), Path: path + path_separator + primary_key})
+			receiver.on_message(SyncMessage{Type: SyncTypeRemove, Data: pubsub.RowTypeToJson(&item, obs.GetRowSchema()), Path: path + path_separator + primary_key})
 		},
 		OnUpdateFunc: func(oldItem, newItem rowType.RowType) {
 			primary_key := oldItem[0].(string)
-			receiver.on_message(SyncMessage{Type: SyncTypeUpdate, Data: pubsub.RowTypeToJson(&newItem, obs.RowSchema.Unwrap()), Path: path + path_separator + primary_key})
+			receiver.on_message(SyncMessage{Type: SyncTypeUpdate, Data: pubsub.RowTypeToJson(&newItem, obs.GetRowSchema()), Path: path + path_separator + primary_key})
 		},
 	})
 	for row := range obs.Pull {
-		receiver.syncFromObservable_row(row, path, obs.RowSchema.Unwrap())
+		receiver.syncFromObservable_row(row, path, obs.GetRowSchema())
 	}
 
 }

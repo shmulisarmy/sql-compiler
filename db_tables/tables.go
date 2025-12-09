@@ -15,6 +15,14 @@ type Table struct {
 	R_Table pubsub.R_Table
 }
 
+func NewTable(name string, columns []rowType.ColInfo) Table {
+	return Table{
+		Name:    name,
+		Columns: columns,
+		R_Table: pubsub.New_R_Table(columns),
+	}
+}
+
 func (this *Table) Next_row_id() int {
 	return len(this.R_Table.Rows)
 }
@@ -94,15 +102,8 @@ func (this Table) Get_col_index(col_name string) int {
 	return -1
 }
 
-var Tables = tablesNewKeyValueArrayWith(30, Table{
-	Name:    "person",
-	Columns: []rowType.ColInfo{{"name", rowType.String}, {"email", rowType.String}, {"age", rowType.Int}, {"state", rowType.String}, {"id", rowType.Int}},
-	R_Table: pubsub.New_R_Table(),
-}, Table{
-	Name:    "todo",
-	Columns: []rowType.ColInfo{{"title", rowType.String}, {"description", rowType.String}, {"done", rowType.Bool}, {"person_id", rowType.Int}, {"is_public", rowType.Bool}},
-	R_Table: pubsub.New_R_Table(),
-})
+var Tables = tablesNewKeyValueArrayWith(30, NewTable("person", rowType.RowSchema{{"name", rowType.String}, {"email", rowType.String}, {"age", rowType.Int}, {"state", rowType.String}, {"id", rowType.Int}}),
+	NewTable("todo", []rowType.ColInfo{{"title", rowType.String}, {"description", rowType.String}, {"done", rowType.Bool}, {"person_id", rowType.Int}, {"is_public", rowType.Bool}}))
 
 func tablesNewKeyValueArrayWith(constant_cap int, initial_tables ...Table) *utils.CappedKeyValueArray[Table] {
 	keyValueArray := utils.NewKeyValueArray[Table](constant_cap)

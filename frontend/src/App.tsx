@@ -24,7 +24,6 @@ type Todo = Person['todo'][0]
 
 
 const people: {[key: string]: Person} = live_db_view(`ws://${backend_base_url}/stream-data`);
-const ws = new WebSocket(`ws://${backend_base_url}/stream-data`)
 
 
 

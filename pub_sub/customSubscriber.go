@@ -75,3 +75,6 @@ func (receiver *CustomSubscriber) on_update(oldItem, newItem rowType.RowType) {
 
 func (receiver *CustomSubscriber) Pull(yield func(rowType.RowType) bool) {
 }
+func (this *CustomSubscriber) GetRowSchema() rowType.RowSchema {
+	return this.subscribed_to.GetRowSchema()
+}
