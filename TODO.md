@@ -11,10 +11,11 @@
 
 ### In Progress
 
-- [ ] stream to client  
-- [ ] index/channel on table, (added but not used in with sql yet)  
+  
 
 ### Done ✓
 
 - [x] table column validation  
+- [x] stream to client  
+- [x] index/channel on table
 
