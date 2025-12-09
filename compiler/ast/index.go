@@ -45,8 +45,6 @@ type Select struct {
 }
 
 func (this *Select) Recursively_link_children() {
-	print("sup")
-
 	for i := range this.Selected_values {
 		switch col := this.Selected_values[i].Value_to_select.(type) {
 		case Select:

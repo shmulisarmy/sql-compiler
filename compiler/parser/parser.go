@@ -115,12 +115,13 @@ func (p *Parser) Parse_Select() ast.Select {
 		}
 	}
 	s.Table = p.expectIdent()
-	p.expect(WHERE)
-	for p.inrange() && (p.Tokens[p.pos].Type != RPAREN) {
-		where := p.parse_simple_expr()
-		s.Wheres = append(s.Wheres, where)
-		if !p.optionallyExpect(AND) {
-			break
+	if p.optionallyExpect(WHERE) {
+		for p.inrange() && (p.Tokens[p.pos].Type != RPAREN) {
+			where := p.parse_simple_expr()
+			s.Wheres = append(s.Wheres, where)
+			if !p.optionallyExpect(AND) {
+				break
+			}
 		}
 	}
 

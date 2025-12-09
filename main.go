@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"os"
 	"sql-compiler/compiler/rowType"
-	. "sql-compiler/compiler/rowType"
 	compiler_runtime "sql-compiler/compiler/runtime"
 	"sql-compiler/db_tables"
 	"sql-compiler/display"
@@ -17,19 +16,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
-
-func init() {
-	db_tables.Tables.Add("person", db_tables.Table{
-		Name:    "person",
-		Columns: []ColInfo{{"name", String}, {"email", String}, {"age", Int}, {"state", String}, {"id", Int}},
-		R_Table: pubsub.New_R_Table(),
-	})
-	db_tables.Tables.Add("todo", db_tables.Table{
-		Name:    "todo",
-		Columns: []ColInfo{{"title", String}, {"description", String}, {"done", Bool}, {"person_id", Int}, {"is_public", Bool}},
-		R_Table: pubsub.New_R_Table(),
-	})
-}
 
 var todos_table *db_tables.Table
 

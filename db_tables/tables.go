@@ -94,4 +94,20 @@ func (this Table) Get_col_index(col_name string) int {
 	return -1
 }
 
-var Tables = utils.NewKeyValueArray[Table](30)
+var Tables = tablesNewKeyValueArrayWith(30, Table{
+	Name:    "person",
+	Columns: []rowType.ColInfo{{"name", rowType.String}, {"email", rowType.String}, {"age", rowType.Int}, {"state", rowType.String}, {"id", rowType.Int}},
+	R_Table: pubsub.New_R_Table(),
+}, Table{
+	Name:    "todo",
+	Columns: []rowType.ColInfo{{"title", rowType.String}, {"description", rowType.String}, {"done", rowType.Bool}, {"person_id", rowType.Int}, {"is_public", rowType.Bool}},
+	R_Table: pubsub.New_R_Table(),
+})
+
+func tablesNewKeyValueArrayWith(constant_cap int, initial_tables ...Table) *utils.CappedKeyValueArray[Table] {
+	keyValueArray := utils.NewKeyValueArray[Table](constant_cap)
+	for _, table := range initial_tables {
+		keyValueArray.Add(table.Name, table)
+	}
+	return keyValueArray
+}
