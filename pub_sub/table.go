@@ -1,7 +1,7 @@
 package pubsub
 
 import (
-	"sql-compiler/rowType"
+	"sql-compiler/compiler/rowType"
 	"sql-compiler/utils"
 )
 

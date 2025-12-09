@@ -1,6 +1,6 @@
 package pubsub
 
-import "sql-compiler/rowType"
+import "sql-compiler/compiler/rowType"
 
 // CustomSubscriber is a flexible subscriber that allows custom callback functions
 type CustomSubscriber struct {

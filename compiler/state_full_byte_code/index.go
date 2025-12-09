@@ -2,8 +2,8 @@ package state_full_byte_code
 
 import (
 	"fmt"
-	"sql-compiler/byte_code"
-	"sql-compiler/rowType"
+	"sql-compiler/compiler/rowType"
+	"sql-compiler/compiler/state_full_byte_code/byte_code"
 	option "sql-compiler/unwrap"
 )
 

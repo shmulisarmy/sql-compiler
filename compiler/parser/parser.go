@@ -2,8 +2,8 @@ package parser
 
 import (
 	"fmt"
-	"sql-compiler/ast"
-	. "sql-compiler/parser/tokenizer"
+	"sql-compiler/compiler/ast"
+	. "sql-compiler/compiler/parser/tokenizer"
 	"strconv"
 )
 

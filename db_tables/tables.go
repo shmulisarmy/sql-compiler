@@ -3,9 +3,9 @@ package db_tables
 import (
 	"fmt"
 	"sql-compiler/assert"
+	"sql-compiler/compiler/rowType"
 	"sql-compiler/display"
 	pubsub "sql-compiler/pub_sub"
-	"sql-compiler/rowType"
 	"sql-compiler/utils"
 )
 

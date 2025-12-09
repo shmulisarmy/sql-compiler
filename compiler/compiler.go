@@ -2,12 +2,12 @@ package compiler
 
 import (
 	"sql-compiler/assert"
-	"sql-compiler/ast"
-	"sql-compiler/byte_code"
+	"sql-compiler/compiler/ast"
+	. "sql-compiler/compiler/parser/tokenizer"
+	. "sql-compiler/compiler/rowType"
+	"sql-compiler/compiler/state_full_byte_code/byte_code"
 	"sql-compiler/db_tables"
 	"sql-compiler/display"
-	. "sql-compiler/parser/tokenizer"
-	. "sql-compiler/rowType"
 )
 
 func Make_select_byte_code(select_ *ast.Select) byte_code.Select {

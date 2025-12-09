@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"sql-compiler/compare"
+	"sql-compiler/compiler/rowType"
 	pubsub "sql-compiler/pub_sub"
-	"sql-compiler/rowType"
 	"testing"
 )
 

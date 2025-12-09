@@ -8,8 +8,8 @@
 package main
 
 import (
+	"sql-compiler/compiler/rowType"
 	pubsub "sql-compiler/pub_sub"
-	"sql-compiler/rowType"
 )
 
 const path_separator = "/"
