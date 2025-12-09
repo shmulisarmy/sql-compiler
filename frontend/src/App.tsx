@@ -1,5 +1,5 @@
 import { createSignal, type Component } from 'solid-js';
-import { live_db } from './live_db';
+import { live_db as live_db_view } from './live_db';
 import { run_tests } from './integration_tests';
 
 
@@ -23,7 +23,7 @@ export const backend_base_url = "localhost:8080"
 type Todo = Person['todo'][0]
 
 
-const people: {[key: string]: Person} = live_db(`ws://${backend_base_url}/stream-data`);
+const people: {[key: string]: Person} = live_db_view(`ws://${backend_base_url}/stream-data`);
 const ws = new WebSocket(`ws://${backend_base_url}/stream-data`)
 
 
