@@ -1,3 +1,5 @@
+//this struct is a user meant to be user facing, its a way to just display things to the user that can be plugged into an observable as if it were a subscriber
+
 package pubsub
 
 import (

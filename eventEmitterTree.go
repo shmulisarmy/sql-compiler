@@ -1,3 +1,10 @@
+// right now, the only way to test the functionality in this file is to run an
+// integration test that includes the front end where @run_tests.tsx the front end has two
+// objects that are a reflection of how a query view that gets updated via an
+// event tree and make sure that the two of them are in sync. However, it would
+// be a nice to have a unit test for this too, as it will then be able to be ran
+// more often and quicker.
+
 package main
 
 import (
