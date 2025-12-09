@@ -4,7 +4,7 @@ package pubsub
 
 import (
 	"fmt"
-	"sql-compiler/rowType"
+	"sql-compiler/compiler/rowType"
 	"sql-compiler/unwrap"
 )
 

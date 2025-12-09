@@ -1,8 +1,8 @@
 package ast
 
 import (
-	. "sql-compiler/parser/tokenizer"
-	"sql-compiler/rowType"
+	. "sql-compiler/compiler/parser/tokenizer"
+	"sql-compiler/compiler/rowType"
 	"sql-compiler/unwrap"
 	. "sql-compiler/unwrap"
 )

@@ -3,7 +3,7 @@ package pubsub
 import (
 	"fmt"
 	"sql-compiler/assert"
-	. "sql-compiler/rowType"
+	. "sql-compiler/compiler/rowType"
 	"strings"
 )
 

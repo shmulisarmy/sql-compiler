@@ -3,12 +3,12 @@ package main
 import (
 	"net/http"
 	"os"
+	"sql-compiler/compiler/rowType"
+	. "sql-compiler/compiler/rowType"
 	compiler_runtime "sql-compiler/compiler/runtime"
 	"sql-compiler/db_tables"
 	"sql-compiler/display"
 	pubsub "sql-compiler/pub_sub"
-	"sql-compiler/rowType"
-	. "sql-compiler/rowType"
 
 	"strconv"
 	"time"

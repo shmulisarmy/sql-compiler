@@ -1,6 +1,6 @@
 package pubsub
 
-import . "sql-compiler/rowType"
+import . "sql-compiler/compiler/rowType"
 
 type Filter struct {
 	Observable
