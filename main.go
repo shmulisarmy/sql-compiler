@@ -31,7 +31,7 @@ func obsToClientDataSync(obs *pubsub.Mapper, ws *websocket.Conn) {
 		},
 	}
 	eventEmitterTree.syncFromObservable(obs, "")
-	eventEmitterTree.on_message(SyncMessage{Type: LoadInitialData, Data: pubsub.ObserverToJson(obs, obs.RowSchema.Expect("if this was a mapper that was made by compiling a select statement then it should have a row schema"))})
+	eventEmitterTree.on_message(SyncMessage{Type: LoadInitialData, Data: pubsub.ObserverToJson(obs, obs.GetRowSchema())})
 }
 func main() {
 

@@ -36,7 +36,7 @@ func TestObservedLists(t *testing.T) {
 		},
 	}
 
-	json_string := pubsub.ObserverToJson(obs, obs.RowSchema.Unwrap())
+	json_string := pubsub.ObserverToJson(obs, obs.GetRowSchema())
 	var actual_ast map[string]any
 	json.Unmarshal([]byte(json_string), &actual_ast)
 

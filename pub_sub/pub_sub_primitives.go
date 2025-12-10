@@ -49,6 +49,9 @@ type ObservableI interface {
 		Map_on(transformer func(rowType.RowType) rowType.RowType) ObservableI
 		To_display(unwrap.Option[rowType.RowSchema]) *Printer
 	}
+	interface {
+		GetRowSchema() rowType.RowSchema
+	}
 }
 type Subscriber interface {
 	set_subscribed_to(observable ObservableI)

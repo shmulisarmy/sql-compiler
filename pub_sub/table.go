@@ -13,7 +13,7 @@ type R_Table struct {
 	rowSchema  []rowType.ColInfo
 }
 
-func New_R_Table(Columns []rowType.ColInfo) R_Table {
+func New_R_Table(row_schema rowType.RowSchema) R_Table {
 	return R_Table{
 		Observable: Observable{
 			Subscribers: []Subscriber{},
@@ -21,7 +21,7 @@ func New_R_Table(Columns []rowType.ColInfo) R_Table {
 		Rows:       []rowType.RowType{},
 		is_deleted: []bool{},
 		Indexes:    []Index{},
-		rowSchema:  Columns,
+		rowSchema:  row_schema,
 	}
 }
 
@@ -150,6 +150,10 @@ func (this *Channel) Pull(yield func(rowType.RowType) bool) {
 	}
 }
 
-func (table *R_Table) GetRowSchema() rowType.RowSchema {
-	return table.rowSchema
+func (this *R_Table) GetRowSchema() rowType.RowSchema {
+	return this.rowSchema
+}
+
+func (this *Channel) GetRowSchema() rowType.RowSchema {
+	return this.table.rowSchema
 }

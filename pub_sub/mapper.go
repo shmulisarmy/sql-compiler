@@ -1,7 +1,6 @@
 package pubsub
 
 import (
-	"fmt"
 	"sql-compiler/compiler/rowType"
 	"sql-compiler/unwrap"
 )
@@ -10,7 +9,7 @@ type Mapper struct {
 	Observable
 	transformer   func(rowType.RowType) rowType.RowType
 	subscribed_to ObservableI
-	RowSchema     unwrap.Option[rowType.RowSchema]
+	RowSchema     unwrap.Option[rowType.RowSchema] //created when compiling the select, bases it off the tables (that were selecting from) schema and only places ones for the values that are actually being selected
 }
 
 func (this *Mapper) set_subscribed_to(observable ObservableI) {
@@ -39,15 +38,10 @@ func (this *Mapper) on_update(old_row rowType.RowType, new_row rowType.RowType) 
 func (this *Mapper) String() string {
 	res := "["
 	for row := range this.Pull {
-		if this.RowSchema.IsSome() {
-			res += RowTypeToJson(&row, this.RowSchema.Unwrap()) + ","
-		} else {
-			res += fmt.Sprint(row) + ","
-		}
+		res += RowTypeToJson(&row, this.GetRowSchema()) + ","
 	}
 	return res + "]"
 }
-
 func (this *Mapper) GetRowSchema() rowType.RowSchema {
 	return this.RowSchema.Unwrap()
 }

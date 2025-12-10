@@ -1,6 +1,9 @@
 package pubsub
 
-import . "sql-compiler/compiler/rowType"
+import (
+	"sql-compiler/compiler/rowType"
+	. "sql-compiler/compiler/rowType"
+)
 
 type Filter struct {
 	Observable
@@ -44,4 +47,8 @@ func (this *Filter) on_update(old_row RowType, new_row RowType) {
 	} else if old_passed && new_passed {
 		this.Publish_Update(old_row, new_row)
 	}
+}
+
+func (this *Filter) GetRowSchema() rowType.RowSchema {
+	return this.subscribed_to.GetRowSchema()
 }
