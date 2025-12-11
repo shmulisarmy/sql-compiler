@@ -38,7 +38,7 @@ func obsToClientDataSync(obs pubsub.ObservableI, ws *websocket.Conn) {
 func add_sample_data() {
 	tables := db_tables.Tables
 	tables.Get("person").Insert(rowType.RowType{"teddy", "teddyemail@gmail.com", 22, "state", tables.Get("person").Next_row_id(), "https://api.dicebear.com/7.x/avataaars/svg?seed=teddy"})
-	tables.Get("person").Insert(rowType.RowType{"ajay", "ajayemail@gmail.com", 22, "state", tables.Get("person").Next_row_id(), "https://api.dicebear.com/7.x/avataaars/svg?seed=ajay"})
+	tables.Get("person").Insert(rowType.RowType{"ariana", "arianaemail@gmail.com", 22, "state", tables.Get("person").Next_row_id(), "https://api.dicebear.com/7.x/avataaars/svg?seed=ajay"})
 	tables.Get("person").Insert(rowType.RowType{"the-doo-er", "the-doo-eremail@gmail.com", 20, "state", tables.Get("person").Next_row_id(), "https://api.dicebear.com/7.x/avataaars/svg?seed=the-doo-er"})
 }
 
