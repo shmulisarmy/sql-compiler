@@ -1,9 +1,6 @@
 package main
 
 import (
-	"embed"
-	"io/fs"
-	"log"
 	"net/http"
 	"sql-compiler/compiler/rowType"
 	compiler_runtime "sql-compiler/compiler/runtime"
@@ -11,7 +8,6 @@ import (
 	"sql-compiler/display"
 	event_emitter_tree "sql-compiler/eventEmitterTree"
 	pubsub "sql-compiler/pub_sub"
-	"strings"
 
 	"strconv"
 	"time"
@@ -22,7 +18,7 @@ import (
 )
 
 //go:embed all:frontend/dist
-var frontendFS embed.FS
+// var frontendFS embed.FS
 
 func obsToClientDataSync(obs pubsub.ObservableI, ws *websocket.Conn) {
 	eventEmitterTree := event_emitter_tree.EventEmitterTree{
@@ -100,30 +96,24 @@ func main() {
 		add_sample_data()
 	})
 
-	frontendDist, err := fs.Sub(frontendFS, "frontend/dist")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// r.Use(func(c *gin.Context) {
+	// 	path := c.Request.URL.Path
 
-	fileServer := http.FileServer(http.FS(frontendDist))
-	r.Use(func(c *gin.Context) {
-		path := c.Request.URL.Path
+	// 	if strings.HasPrefix(path, "/stream-data") || strings.HasPrefix(path, "/add-person") || strings.HasPrefix(path, "/delete-person") || strings.HasPrefix(path, "/add-sample-data") {
+	// 		c.Next()
+	// 		return
+	// 	}
 
-		if strings.HasPrefix(path, "/stream-data") || strings.HasPrefix(path, "/add-person") || strings.HasPrefix(path, "/delete-person") || strings.HasPrefix(path, "/add-sample-data") {
-			c.Next()
-			return
-		}
+	// 	filePath := strings.TrimPrefix(path, "/")
+	// 	_, err := frontendDist.Open(filePath)
 
-		filePath := strings.TrimPrefix(path, "/")
-		_, err := frontendDist.Open(filePath)
+	// 	if err != nil {
+	// 		c.FileFromFS("index.html", http.FS(frontendDist))
+	// 		return
+	// 	}
 
-		if err != nil {
-			c.FileFromFS("index.html", http.FS(frontendDist))
-			return
-		}
-
-		fileServer.ServeHTTP(c.Writer, c.Request)
-	})
+	// 	fileServer.ServeHTTP(c.Writer, c.Request)
+	// })
 
 	r.Run(":8080")
 
