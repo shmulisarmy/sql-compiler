@@ -17,6 +17,8 @@ const (
 	TRUE   TokenType = "TRUE"
 	FALSE  TokenType = "FALSE"
 	AS     TokenType = "AS"
+	GROUP  TokenType = "GROUP"
+	BY     TokenType = "BY"
 
 	// Special
 	ILLEGAL TokenType = "ILLEGAL"
@@ -118,6 +120,10 @@ var keywords = map[string]TokenType{
 	"false":  FALSE,
 	"AS":     AS,
 	"as":     AS,
+	"GROUP":  GROUP,
+	"group":  GROUP,
+	"BY":     BY,
+	"by":     BY,
 }
 
 func lookupIdent(ident string) TokenType {

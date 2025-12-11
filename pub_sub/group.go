@@ -3,6 +3,8 @@ package pubsub
 
 import (
 	"sql-compiler/compiler/rowType"
+	"sql-compiler/debugutil"
+	"strconv"
 )
 
 type GroupBy struct {
@@ -14,7 +16,18 @@ type GroupBy struct {
 }
 
 func (this *GroupBy) Get_rows_group_value(row *rowType.RowType) string {
-	return (*row)[this.index_of_col_to_group_by].(string)
+	// debugutil.Print(row, "row")
+	// debugutil.Print(row, "is row, ")
+	debugutil.Print(this.index_of_col_to_group_by, "this.index_of_col_to_group_by")
+	rows_group_value := (*row)[this.index_of_col_to_group_by]
+	switch rows_group_value := rows_group_value.(type) {
+	case string:
+		return rows_group_value
+	case int:
+		return strconv.Itoa(rows_group_value)
+	default:
+		panic("unexpected type")
+	}
 }
 func (this *GroupBy) set_subscribed_to(observable ObservableI) {
 	this.subscribed_to = observable

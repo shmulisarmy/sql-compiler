@@ -8,6 +8,7 @@ import (
 	"sql-compiler/compiler/state_full_byte_code/byte_code"
 	"sql-compiler/db_tables"
 	"sql-compiler/display"
+	"sql-compiler/unwrap"
 )
 
 func Make_select_byte_code(select_ *ast.Select) byte_code.Select {
@@ -41,6 +42,33 @@ func Make_select_byte_code(select_ *ast.Select) byte_code.Select {
 	}
 	table := db_tables.Tables.Get(select_.Table)
 	s.Col_and_value_to_index_by = Choose_table_col_to_index(table, select_)
+
+	// Compile GROUP BY column to index
+	if select_.GroupByCol.IsSome() {
+		group_by_col := select_.GroupByCol.Unwrap()
+		var col_name string
+		switch col := group_by_col.(type) {
+		case ast.Plain_col_name:
+			col_name = string(col)
+		case ast.Table_access:
+			col_name = col.Col_name
+			if col.Table_name != select_.Table {
+				panic("GROUP BY column must be from the same table")
+			}
+		default:
+			panic("GROUP BY column must be a plain column name or table access")
+		}
+
+		// table.Get_col_index(col_name)
+		col_index := select_.Row_schema.Find_field_index(col_name)
+		if col_index == -1 {
+			panic("GROUP BY column " + col_name + " not found in table " + select_.Table)
+		}
+		s.Group_by_col_index = unwrap.Some(col_index)
+	} else {
+		s.Group_by_col_index = unwrap.None[int]()
+	}
+
 	return s
 }
 

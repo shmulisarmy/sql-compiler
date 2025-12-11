@@ -2,11 +2,11 @@ package main
 
 import (
 	"net/http"
-	"os"
 	"sql-compiler/compiler/rowType"
 	compiler_runtime "sql-compiler/compiler/runtime"
 	"sql-compiler/db_tables"
 	"sql-compiler/display"
+	event_emitter_tree "sql-compiler/eventEmitterTree"
 	pubsub "sql-compiler/pub_sub"
 
 	"strconv"
@@ -23,18 +23,31 @@ func init() {
 	todos_table = db_tables.Tables.Get("todo")
 }
 
-func obsToClientDataSync(obs *pubsub.Mapper, ws *websocket.Conn) {
-	eventEmitterTree := eventEmitterTree{
-		on_message: func(message SyncMessage) {
+func obsToClientDataSync(obs pubsub.ObservableI, ws *websocket.Conn) {
+	eventEmitterTree := event_emitter_tree.EventEmitterTree{
+		On_message: func(message event_emitter_tree.SyncMessage) {
 			message.Timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 			ws.WriteJSON(message)
 		},
 	}
-	eventEmitterTree.syncFromObservable(obs, "")
-	eventEmitterTree.on_message(SyncMessage{Type: LoadInitialData, Data: pubsub.ObserverToJson(obs, obs.GetRowSchema())})
+	eventEmitterTree.SyncFromObservable(obs, "")
+	eventEmitterTree.On_message(event_emitter_tree.SyncMessage{Type: event_emitter_tree.LoadInitialData, Data: pubsub.ObserverToJson(obs, obs.GetRowSchema())})
 }
+
+func add_sample_data() {
+	tables := db_tables.Tables
+	tables.Get("person").Insert(rowType.RowType{"shmuli", "email@gmail.com", 22, "state", tables.Get("person").Next_row_id()})
+	tables.Get("person").Insert(rowType.RowType{"ajay", "email@gmail.com", 22, "state", tables.Get("person").Next_row_id()})
+	tables.Get("person").Insert(rowType.RowType{"the-doo-er", "email@gmail.com", 20, "state", tables.Get("person").Next_row_id()})
+	todos_table.Insert(rowType.RowType{"eat food", "make sure its clean", false, 1, false})
+	todos_table.Insert(rowType.RowType{"play music", "make sure its clean", false, 1, true})
+	todos_table.Insert(rowType.RowType{"clean", "make sure its clean", true, 1, false})
+	todos_table.Insert(rowType.RowType{"do art", "make sure its clean", false, 2, true})
+}
+
 func main() {
 
+	// gin.SetMode("release")
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -49,11 +62,13 @@ func main() {
 
 	db_tables.Tables.Get("todo").Index_on("person_id")
 
-	src := `SELECT person.name, person.email, person.id, (
+	src := `SELECT person.name, person.email, person.age, person.id, (
 		SELECT todo.title as epic_title, person.name as author, person.id FROM todo WHERE todo.person_id == person.id
-		) as todo FROM person WHERE person.age >= 3 `
+		) as todos FROM person WHERE person.age >= 3  `
 
 	obs := compiler_runtime.Query_to_observer(src)
+
+	display.DisplayStruct(obs)
 
 	r.GET("/stream-data", func(ctx *gin.Context) {
 		ws, err := (&websocket.Upgrader{
@@ -76,27 +91,17 @@ func main() {
 
 		db_tables.Tables.Get("todo").Insert(rowType.RowType{ctx.Query("title"), ctx.Query("description"), false, person_id, true})
 	})
-	eventEmitterTree := eventEmitterTree{
-		on_message: func(message SyncMessage) {
+	eventEmitterTree := event_emitter_tree.EventEmitterTree{
+		On_message: func(message event_emitter_tree.SyncMessage) {
 			display.DisplayStruct(message)
 		},
 	}
-	eventEmitterTree.syncFromObservable(obs, "")
+	eventEmitterTree.SyncFromObservable(obs, "")
 	r.GET("add-sample-data", func(ctx *gin.Context) {
 		add_sample_data()
 	})
 	r.Run(":8080")
 
-	os.Exit(0)
+	// os.Exit(0)
 
-}
-
-func add_sample_data() {
-	tables := db_tables.Tables
-	tables.Get("person").Insert(rowType.RowType{"shmuli", "email@gmail.com", 25, "state", tables.Get("person").Next_row_id()})
-	tables.Get("person").Insert(rowType.RowType{"the-doo-er", "email@gmail.com", 20, "state", tables.Get("person").Next_row_id()})
-	todos_table.Insert(rowType.RowType{"eat food", "make sure its clean", false, 1, false})
-	todos_table.Insert(rowType.RowType{"play music", "make sure its clean", false, 1, true})
-	todos_table.Insert(rowType.RowType{"clean", "make sure its clean", true, 1, false})
-	todos_table.Insert(rowType.RowType{"do art", "make sure its clean", false, 2, true})
 }

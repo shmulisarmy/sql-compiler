@@ -1,0 +1,16 @@
+{
+  "name": "@sql-compiler/live-db-react",
+  "version": "1.0.0",
+  "description": "React SDK for SQL Compiler live database synchronization",
+  "main": "live_db.tsx",
+  "type": "module",
+  "peerDependencies": {
+    "react": "^18.0.0"
+  },
+  "keywords": [
+    "react",
+    "live-db",
+    "websocket",
+    "hooks"
+  ]
+}

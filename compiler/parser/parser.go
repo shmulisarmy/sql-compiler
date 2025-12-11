@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sql-compiler/compiler/ast"
 	. "sql-compiler/compiler/parser/tokenizer"
+	"sql-compiler/unwrap"
 	"strconv"
 )
 
@@ -123,6 +124,12 @@ func (p *Parser) Parse_Select() ast.Select {
 				break
 			}
 		}
+	}
+	if p.optionallyExpect(GROUP) {
+		p.expect(BY)
+		s.GroupByCol = unwrap.Some(p.parseCol())
+	} else {
+		s.GroupByCol = unwrap.None[ast.Col]()
 	}
 
 	return s

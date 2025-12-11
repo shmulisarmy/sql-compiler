@@ -47,6 +47,7 @@ type ObservableI interface {
 	interface {
 		Filter_on(predicate func(rowType.RowType) bool) ObservableI
 		Map_on(transformer func(rowType.RowType) rowType.RowType) ObservableI
+		GroupBy_on(col_index int) ObservableI
 		To_display(unwrap.Option[rowType.RowSchema]) *Printer
 	}
 	interface {

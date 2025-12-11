@@ -1,5 +1,5 @@
 import { createSignal, type Component } from 'solid-js';
-import { live_db as live_db_view } from './live_db';
+import { live_db as live_db_view } from "../../live_db_sdks/solid/live_db";
 import { run_tests } from './integration_tests';
 
 

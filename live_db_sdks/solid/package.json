@@ -1,0 +1,17 @@
+{
+  "name": "@sql-compiler/live-db-solid",
+  "version": "1.0.0",
+  "description": "Solid.js SDK for SQL Compiler live database synchronization",
+  "main": "live_db.tsx",
+  "type": "module",
+  "peerDependencies": {
+    "solid-js": "^1.8.0"
+  },
+  "keywords": [
+    "solid",
+    "solidjs",
+    "live-db",
+    "websocket",
+    "reactive"
+  ]
+}

@@ -16,7 +16,7 @@ func (this RowSchema) Find_field_index(field_name string) int {
 			return i
 		}
 	}
-	panic("not found")
+	panic(fmt.Sprintf("field_name '%s' not found in RowSchema", field_name))
 
 }
 

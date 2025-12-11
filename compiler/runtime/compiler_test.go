@@ -10,11 +10,11 @@ import (
 )
 
 func TestObservedLists(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Panic: %v", r)
-		}
-	}()
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		t.Errorf("Panic: %v", r)
+	// 	}
+	// }()
 	src := `SELECT person.name, person.email, person.id FROM person `
 	people := db_tables.Tables.Get("person")
 	id := len(people.R_Table.Rows)

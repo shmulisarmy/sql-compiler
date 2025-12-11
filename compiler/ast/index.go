@@ -38,6 +38,7 @@ type Select struct {
 	Table           string
 	Wheres          []Where
 	Selected_values []Selected_value
+	GroupByCol      Option[Col]
 	///type info
 	Row_schema rowType.RowSchema
 	// compile time (post parsing stage) inserted
